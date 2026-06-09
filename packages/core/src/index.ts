@@ -93,7 +93,7 @@ export {
 export { CommentService, type CommentView } from "./services/comment.service";
 export { PortabilityService, type ImportResult } from "./services/portability.service";
 export { IndexingService } from "./services/indexing.service";
-export { QueueService, type JobType } from "./services/queue.service";
+export { QueueService, type JobType, type JobStats } from "./services/queue.service";
 export { chunkContent } from "./search/chunk";
 export {
   getEmbeddingProvider,

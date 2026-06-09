@@ -1,7 +1,14 @@
-import { eq, sql } from "drizzle-orm";
-import { jobs, type Database, type Job } from "@ai-brain/db";
+import { desc, eq, inArray, sql } from "drizzle-orm";
+import { documents, jobs, type Database, type Job } from "@ai-brain/db";
 
 export type JobType = "reindex" | "purge_trash";
+
+export interface JobStats {
+  pending: number;
+  running: number;
+  failed: number;
+  done: number;
+}
 
 const MAX_ATTEMPTS = 5;
 
@@ -57,5 +64,48 @@ export class QueueService {
       .update(jobs)
       .set({ status: "pending", lastError: message, runAt: new Date(Date.now() + backoffMs), lockedAt: null, updatedAt: new Date() })
       .where(eq(jobs.id, job.id));
+  }
+
+  // --- Operability (used by the admin dashboard) ---------------------------
+
+  async stats(): Promise<JobStats> {
+    const rows = await this.db.select({ status: jobs.status, n: sql<number>`count(*)::int` }).from(jobs).groupBy(jobs.status);
+    const out: JobStats = { pending: 0, running: 0, failed: 0, done: 0 };
+    for (const r of rows) if (r.status in out) out[r.status as keyof JobStats] = r.n;
+    return out;
+  }
+
+  listFailed(limit = 50): Promise<Job[]> {
+    return this.db.select().from(jobs).where(eq(jobs.status, "failed")).orderBy(desc(jobs.updatedAt)).limit(limit);
+  }
+
+  /** Requeue specific jobs (or all failed ones) and reset their docs to pending. */
+  private async requeue(predicateIds: string[] | null): Promise<number> {
+    const failed = predicateIds
+      ? await this.db.select().from(jobs).where(inArray(jobs.id, predicateIds))
+      : await this.db.select().from(jobs).where(eq(jobs.status, "failed"));
+    if (failed.length === 0) return 0;
+
+    const ids = failed.map((j) => j.id);
+    await this.db
+      .update(jobs)
+      .set({ status: "pending", attempts: 0, lastError: null, runAt: new Date(), lockedAt: null, updatedAt: new Date() })
+      .where(inArray(jobs.id, ids));
+
+    const docIds = failed
+      .filter((j) => j.type === "reindex")
+      .map((j) => (j.payload as { documentId?: string }).documentId)
+      .filter((d): d is string => Boolean(d));
+    if (docIds.length) {
+      await this.db.update(documents).set({ indexStatus: "pending" }).where(inArray(documents.id, docIds));
+    }
+    return ids.length;
+  }
+
+  retry(jobId: string): Promise<number> {
+    return this.requeue([jobId]);
+  }
+  retryAllFailed(): Promise<number> {
+    return this.requeue(null);
   }
 }

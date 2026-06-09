@@ -38,3 +38,15 @@ export async function setUserAdminAction(formData: FormData) {
   await adminService().setUserAdmin(userId, String(formData.get("userId")), formData.get("isAdmin") === "true");
   revalidatePath("/admin");
 }
+
+export async function retryJobAction(formData: FormData) {
+  const userId = await requireAdmin();
+  await adminService().retryJob(userId, String(formData.get("jobId")));
+  revalidatePath("/admin");
+}
+
+export async function retryAllJobsAction() {
+  const userId = await requireAdmin();
+  await adminService().retryAllFailedJobs(userId);
+  revalidatePath("/admin");
+}

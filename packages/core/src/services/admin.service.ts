@@ -6,10 +6,12 @@ import {
   type Database,
   type RegistrationMode,
 } from "@ai-brain/db";
+import type { Job } from "@ai-brain/db";
 import { generateToken, hashToken } from "../auth/token";
 import { config } from "../config";
 import { AuthError } from "./auth.service";
 import { EmailService } from "./email.service";
+import { QueueService, type JobStats } from "./queue.service";
 
 export interface AdminUserView {
   id: string;
@@ -23,11 +25,33 @@ export interface AdminUserView {
 /** Instance administration — gated by users.is_admin. */
 export class AdminService {
   private readonly email = new EmailService();
-  constructor(private readonly db: Database) {}
+  private readonly queue: QueueService;
+  constructor(private readonly db: Database) {
+    this.queue = new QueueService(db);
+  }
 
   private async requireAdmin(userId: string): Promise<void> {
     const user = await this.db.query.users.findFirst({ where: eq(users.id, userId) });
     if (!user?.isAdmin) throw new AuthError("Admin access required");
+  }
+
+  // --- Background jobs ------------------------------------------------------
+
+  async jobStats(userId: string): Promise<JobStats> {
+    await this.requireAdmin(userId);
+    return this.queue.stats();
+  }
+  async failedJobs(userId: string): Promise<Job[]> {
+    await this.requireAdmin(userId);
+    return this.queue.listFailed();
+  }
+  async retryJob(userId: string, jobId: string): Promise<number> {
+    await this.requireAdmin(userId);
+    return this.queue.retry(jobId);
+  }
+  async retryAllFailedJobs(userId: string): Promise<number> {
+    await this.requireAdmin(userId);
+    return this.queue.retryAllFailed();
   }
 
   async setRegistrationMode(userId: string, mode: RegistrationMode): Promise<void> {
