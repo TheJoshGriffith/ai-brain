@@ -6,6 +6,7 @@ import {
   DocumentService,
   LinkService,
   SearchService,
+  SharingService,
   SpaceService,
   TagService,
   TokenService,
@@ -20,3 +21,4 @@ export const searchService = () => new SearchService(getDb());
 export const spaceService = () => new SpaceService(getDb());
 export const accessService = () => new AccessService(getDb());
 export const tagService = () => new TagService(getDb());
+export const sharingService = () => new SharingService(getDb());
