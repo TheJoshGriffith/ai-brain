@@ -1,4 +1,31 @@
-export { config, type EmbeddingProviderName } from "./config.js";
+export { config, type EmbeddingProviderName } from "./config";
 
-// Service modules (DocumentService, LinkService, SearchService, TokenService,
-// AuthService, embeddings) are added in subsequent phases and re-exported here.
+// Auth primitives
+export { hashPassword, verifyPassword } from "./auth/password";
+export {
+  generateToken,
+  hashToken,
+  safeHashEquals,
+  TOKEN_PREFIX,
+  TOKEN_SCOPES,
+  type TokenScope,
+  type GeneratedToken,
+} from "./auth/token";
+
+// Services
+export {
+  AuthService,
+  AuthError,
+  registerSchema,
+  type RegisterInput,
+} from "./services/auth.service";
+export {
+  TokenService,
+  parseBearer,
+  createTokenSchema,
+  type CreateTokenInput,
+  type Principal,
+  type TokenSummary,
+} from "./services/token.service";
+
+// Document / link / search services are added in later phases.
