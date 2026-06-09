@@ -1,4 +1,5 @@
 export { config, type EmbeddingProviderName } from "./config";
+export { RateLimiter, loginLimiter, passwordResetLimiter, signupLimiter } from "./rate-limit";
 
 // Auth primitives
 export { hashPassword, verifyPassword } from "./auth/password";

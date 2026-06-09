@@ -1,8 +1,9 @@
 "use server";
 
+import { headers } from "next/headers";
 import { AuthError as NextAuthError } from "next-auth";
 import { ZodError } from "zod";
-import { AuthError as CoreAuthError } from "@ai-brain/core";
+import { AuthError as CoreAuthError, signupLimiter } from "@ai-brain/core";
 import { signIn } from "@/auth";
 import { authService } from "@/lib/services";
 import type { AuthFormState } from "@/app/login/actions";
@@ -15,6 +16,11 @@ export async function registerAction(
   const password = String(formData.get("password") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const inviteToken = String(formData.get("inviteToken") ?? "") || undefined;
+
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  if (!signupLimiter.consume(ip)) {
+    return { error: "Too many sign-ups from this network. Please try again later." };
+  }
 
   try {
     await authService().register({ email, password, name: name || undefined, inviteToken });

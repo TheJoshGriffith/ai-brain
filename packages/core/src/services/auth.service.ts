@@ -13,6 +13,7 @@ import { z } from "zod";
 import { hashPassword, verifyPassword } from "../auth/password";
 import { generateToken, hashToken } from "../auth/token";
 import { config } from "../config";
+import { loginLimiter, passwordResetLimiter } from "../rate-limit";
 import { EmailService } from "./email.service";
 import { SpaceService } from "./space.service";
 
@@ -68,10 +69,16 @@ export class AuthService {
   /** Returns the user if credentials valid (and email verified when required). */
   async verifyCredentials(email: string, password: string): Promise<User | null> {
     const normalized = email.toLowerCase().trim();
+    // Throttle brute-force: too many recent failures for this email → reject.
+    if (loginLimiter.isLimited(normalized)) return null;
+
     const user = await this.db.query.users.findFirst({ where: eq(users.email, normalized) });
-    if (!user?.passwordHash) return null;
-    if (!(await verifyPassword(user.passwordHash, password))) return null;
+    if (!user?.passwordHash || !(await verifyPassword(user.passwordHash, password))) {
+      loginLimiter.record(normalized);
+      return null;
+    }
     if (config.requireEmailVerification && !user.emailVerified) return null;
+    loginLimiter.reset(normalized);
     return user;
   }
 
@@ -100,6 +107,7 @@ export class AuthService {
   /** Always resolves (does not reveal whether the email exists). */
   async requestPasswordReset(email: string): Promise<void> {
     const normalized = email.toLowerCase().trim();
+    if (!passwordResetLimiter.consume(normalized)) return; // silently throttle
     const user = await this.db.query.users.findFirst({ where: eq(users.email, normalized) });
     if (!user) return;
     const raw = generateToken().raw;

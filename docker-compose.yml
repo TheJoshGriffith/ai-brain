@@ -3,7 +3,7 @@ name: ai-brain
 # Shared environment for the app services (web, mcp, worker, migrate).
 x-app-env: &app-env
   DATABASE_URL: postgres://ai_brain:ai_brain@db:5432/ai_brain
-  AUTH_SECRET: ${AUTH_SECRET:-change-me-please}
+  AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET must be set (openssl rand -base64 32) in your .env}
   AUTH_URL: ${AUTH_URL:-http://localhost:3002}
   EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-local}
   EMBEDDING_MODEL: ${EMBEDDING_MODEL:-Xenova/bge-small-en-v1.5}
