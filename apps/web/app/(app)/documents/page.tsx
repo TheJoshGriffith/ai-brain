@@ -39,6 +39,7 @@ export default async function DocumentsPage({
       spaceTags={spaceTags.map((t) => ({ id: t.id, name: t.name }))}
       activeTag={tag}
       spaceName={current.name}
+      spaceId={current.id}
       mayWrite={canWrite(current.role)}
     />
   );

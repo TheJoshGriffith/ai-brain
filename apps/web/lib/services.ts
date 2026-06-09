@@ -6,6 +6,7 @@ import {
   CommentService,
   DocumentService,
   LinkService,
+  PortabilityService,
   SearchService,
   SharingService,
   SpaceService,
@@ -24,3 +25,4 @@ export const accessService = () => new AccessService(getDb());
 export const tagService = () => new TagService(getDb());
 export const sharingService = () => new SharingService(getDb());
 export const commentService = () => new CommentService(getDb());
+export const portabilityService = () => new PortabilityService(getDb());

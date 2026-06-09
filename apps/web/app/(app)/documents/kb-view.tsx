@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { File, Layers, Search, Trash2 } from "lucide-react";
 import { createDocumentAction } from "./actions";
+import { ImportExportControls } from "./import-export";
 
 export interface KbDoc {
   id: string;
@@ -25,12 +26,14 @@ export function KbView({
   spaceTags,
   activeTag,
   spaceName,
+  spaceId,
   mayWrite,
 }: {
   docs: KbDoc[];
   spaceTags: { id: string; name: string }[];
   activeTag?: string;
   spaceName: string;
+  spaceId: string;
   mayWrite: boolean;
 }) {
   const [query, setQuery] = useState("");
@@ -83,13 +86,14 @@ export function KbView({
                 {activeTag ? ` · filtered by #${activeTag}` : ""}
               </p>
             </div>
-            {mayWrite ? (
-              <div className="actions">
+            <div className="actions">
+              <ImportExportControls spaceId={spaceId} mayWrite={mayWrite} />
+              {mayWrite ? (
                 <form action={createDocumentAction}>
                   <button type="submit" className="btn btn-primary">New document</button>
                 </form>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
 
           <div className="toolbar">
