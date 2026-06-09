@@ -64,7 +64,7 @@ jobs:
       - name: Run verification scripts (no-embedding, deterministic)
         run: |
           set -e
-          for s in verify-spaces verify-tags verify-versions verify-portability verify-sharing verify-account; do
+          for s in verify-spaces verify-tags verify-versions verify-portability verify-sharing verify-account verify-concurrency; do
             echo "::group::$s"
             pnpm --filter @ai-brain/core exec node --import tsx scripts/$s.mts ci
             echo "::endgroup::"

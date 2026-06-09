@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull, like, lt, ne } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, like, lt, ne, sql } from "drizzle-orm";
 import {
   documentVersions,
   documents,
@@ -23,6 +23,8 @@ export const updateDocumentSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
   content: z.string().optional(),
   slug: z.string().trim().min(1).max(80).optional(),
+  /** If set, the write fails with a conflict unless it matches the current revision. */
+  expectedRevision: z.number().int().optional(),
 });
 export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>;
 
@@ -35,6 +37,12 @@ export class DocumentNotFoundError extends Error {
 export class DocumentForbiddenError extends Error {
   constructor() {
     super("You do not have permission to perform this action");
+  }
+}
+/** Thrown when an update's expectedRevision no longer matches (concurrent edit). */
+export class DocumentConflictError extends Error {
+  constructor(public readonly currentRevision: number) {
+    super("This document was changed since you loaded it");
   }
 }
 
@@ -127,7 +135,10 @@ export class DocumentService {
     const existing = await this.getByIdUnscoped(id);
     if (!existing) throw new DocumentNotFoundError();
 
-    const { title, content, slug } = updateDocumentSchema.parse(input);
+    const { title, content, slug, expectedRevision } = updateDocumentSchema.parse(input);
+    if (expectedRevision != null && expectedRevision !== existing.revision) {
+      throw new DocumentConflictError(existing.revision);
+    }
     const nextContent = content ?? existing.content;
     const { frontmatter } = parseMarkdown(nextContent);
     const nextTitle = title ?? (content !== undefined ? deriveTitle(nextContent, frontmatter) : existing.title);
@@ -143,6 +154,7 @@ export class DocumentService {
         slug: nextSlug,
         content: nextContent,
         frontmatter,
+        revision: sql`${documents.revision} + 1`,
         ...(contentChanged ? { indexStatus: "pending" as const } : {}),
       })
       .where(eq(documents.id, id))

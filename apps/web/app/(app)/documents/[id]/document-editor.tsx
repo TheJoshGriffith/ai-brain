@@ -20,33 +20,48 @@ export function DocumentEditor({
   id,
   initialTitle,
   initialContent,
+  initialRevision,
   readOnly = false,
 }: {
   id: string;
   initialTitle: string;
   initialContent: string;
+  initialRevision: number;
   readOnly?: boolean;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [status, setStatus] = useState<Status>("saved");
   const [mode, setMode] = useState<Mode>(readOnly ? "preview" : "edit");
+  const [conflict, setConflict] = useState(false);
   const [, startTransition] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const revision = useRef(initialRevision);
 
   const save = useCallback(
     (t: string, c: string) => {
+      if (conflict) return;
       setStatus("saving");
       startTransition(async () => {
         try {
-          await saveDocumentAction(id, { title: t.trim() || undefined, content: c });
-          setStatus("saved");
+          const result = await saveDocumentAction(id, {
+            title: t.trim() || undefined,
+            content: c,
+            expectedRevision: revision.current,
+          });
+          if (result.ok) {
+            revision.current = result.revision;
+            setStatus("saved");
+          } else {
+            setConflict(true);
+            setStatus("error");
+          }
         } catch {
           setStatus("error");
         }
       });
     },
-    [id],
+    [id, conflict],
   );
 
   const scheduleSave = useCallback(
@@ -83,6 +98,12 @@ export function DocumentEditor({
 
   return (
     <div className="editor-main">
+      {conflict ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "8px 22px", background: "color-mix(in oklch, oklch(0.78 0.16 75) 14%, transparent)", borderBottom: "1px solid var(--border)", fontSize: 12.5 }}>
+          <span>This document was changed elsewhere (an agent or another person). Reload to get the latest — unsaved local edits will be lost.</span>
+          <button type="button" className="btn btn-sm" onClick={() => window.location.reload()}>Reload</button>
+        </div>
+      ) : null}
       <div className="editor-bar">
         <Link href="/documents" className="icon-btn" title="Back"><ChevronLeft /></Link>
         {!readOnly ? (

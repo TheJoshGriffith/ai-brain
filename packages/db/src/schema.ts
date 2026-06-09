@@ -183,6 +183,8 @@ export const documents = pgTable(
       (): SQL =>
         sql`to_tsvector('english', coalesce(title, '') || ' ' || coalesce(content, ''))`,
     ),
+    // Monotonic write counter for optimistic concurrency (conflict detection).
+    revision: integer("revision").notNull().default(0),
     // Embedding/index lifecycle — stamped by the background worker.
     indexStatus: text("index_status").$type<"pending" | "indexed" | "failed">().notNull().default("pending"),
     indexedAt: timestamp("indexed_at", { withTimezone: true }),

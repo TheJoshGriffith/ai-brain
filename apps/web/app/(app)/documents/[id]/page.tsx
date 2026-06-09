@@ -39,7 +39,7 @@ export default async function DocumentPage({
 
   return (
     <div className="editor-grid">
-      <DocumentEditor id={doc.id} initialTitle={doc.title} initialContent={doc.content} readOnly={!access.canWrite} />
+      <DocumentEditor id={doc.id} initialTitle={doc.title} initialContent={doc.content} initialRevision={doc.revision} readOnly={!access.canWrite} />
 
       <aside className="editor-aside">
         <div className="meta-block">

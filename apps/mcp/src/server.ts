@@ -89,10 +89,10 @@ export function buildMcpServer(ctx: McpContext): McpServer {
 
   server.tool(
     "update_document",
-    "Update a document's title, content, and/or slug. Links and embeddings are re-indexed automatically.",
-    { id: z.string(), title: z.string().optional(), content: z.string().optional(), slug: z.string().optional() },
-    ({ id, title, content, slug }) =>
-      tool(ctx, "documents:write", async () => ok(await ctx.documents.update(ctx.userId, id, { title, content, slug })))(),
+    "Update a document's title, content, and/or slug. Links and embeddings are re-indexed automatically. Pass expected_revision (from get_document) to fail safely if a human or another agent changed it meanwhile.",
+    { id: z.string(), title: z.string().optional(), content: z.string().optional(), slug: z.string().optional(), expected_revision: z.number().int().optional() },
+    ({ id, title, content, slug, expected_revision }) =>
+      tool(ctx, "documents:write", async () => ok(await ctx.documents.update(ctx.userId, id, { title, content, slug, expectedRevision: expected_revision })))(),
   );
 
   server.tool(

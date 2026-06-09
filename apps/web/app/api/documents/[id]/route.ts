@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { DocumentForbiddenError, DocumentNotFoundError } from "@ai-brain/core";
+import { DocumentConflictError, DocumentForbiddenError, DocumentNotFoundError } from "@ai-brain/core";
 import { documentService } from "@/lib/services";
 import { authenticateRequest, forbidden, hasScope, unauthorized } from "@/lib/api-auth";
 
@@ -35,6 +35,9 @@ export async function PATCH(req: Request, { params }: Params) {
     const doc = await documentService().update(principal.userId, id, body);
     return NextResponse.json({ document: doc });
   } catch (error) {
+    if (error instanceof DocumentConflictError) {
+      return NextResponse.json({ error: error.message, currentRevision: error.currentRevision }, { status: 409 });
+    }
     if (error instanceof DocumentForbiddenError) return forbiddenAccess();
     if (error instanceof DocumentNotFoundError) return notFound();
     if (error instanceof ZodError) {

@@ -35,6 +35,7 @@ export {
   DocumentService,
   DocumentNotFoundError,
   DocumentForbiddenError,
+  DocumentConflictError,
   createDocumentSchema,
   updateDocumentSchema,
   type CreateDocumentInput,
