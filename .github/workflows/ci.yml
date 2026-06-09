@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  check:
+    name: Typecheck · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Web types are checked by `next build`; typecheck the rest explicitly.
+      - name: Typecheck packages
+        run: pnpm --filter @ai-brain/core --filter @ai-brain/db --filter @ai-brain/mcp --filter @ai-brain/worker typecheck
+      - name: Unit tests
+        run: pnpm --filter @ai-brain/core test
+      - name: Build web
+        run: pnpm --filter @ai-brain/web build
+        env:
+          AUTH_SECRET: ci-placeholder
+          DATABASE_URL: postgres://placeholder
+
+  integration:
+    name: DB-backed verification
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: ai_brain
+          POSTGRES_PASSWORD: ai_brain
+          POSTGRES_DB: ai_brain
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ai_brain -d ai_brain"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: postgres://ai_brain:ai_brain@localhost:5432/ai_brain
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Enable pgvector
+        run: psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS vector"
+      - name: Apply migrations
+        run: pnpm db:migrate
+      - name: Run verification scripts (no-embedding, deterministic)
+        run: |
+          set -e
+          for s in verify-spaces verify-tags verify-versions verify-portability verify-sharing verify-account; do
+            echo "::group::$s"
+            pnpm --filter @ai-brain/core exec node --import tsx scripts/$s.mts ci
+            echo "::endgroup::"
+          done
