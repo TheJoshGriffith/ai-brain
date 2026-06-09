@@ -29,3 +29,7 @@ npm-debug.log*
 
 # Docker volumes (local bind mounts, if any)
 .pgdata/
+
+# Design handoff (unpacked locally)
+.design-handoff/
+AI-Brain.zip

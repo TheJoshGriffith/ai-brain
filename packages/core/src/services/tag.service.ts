@@ -26,6 +26,20 @@ export class TagService {
     return this.db.select().from(tags).where(eq(tags.spaceId, spaceId)).orderBy(asc(tags.name));
   }
 
+  /** Tag names keyed by document id, for a batch of documents. */
+  async tagsByDocuments(documentIds: string[]): Promise<Record<string, string[]>> {
+    if (documentIds.length === 0) return {};
+    const rows = await this.db
+      .select({ documentId: documentTags.documentId, name: tags.name })
+      .from(documentTags)
+      .innerJoin(tags, eq(tags.id, documentTags.tagId))
+      .where(inArray(documentTags.documentId, documentIds))
+      .orderBy(asc(tags.name));
+    const map: Record<string, string[]> = {};
+    for (const r of rows) (map[r.documentId] ??= []).push(r.name);
+    return map;
+  }
+
   /** Tag names on a document (no access check — callers gate via the document). */
   async getDocumentTags(documentId: string): Promise<string[]> {
     const rows = await this.db

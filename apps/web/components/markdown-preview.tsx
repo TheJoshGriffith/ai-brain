@@ -16,7 +16,7 @@ function rewriteWikiLinks(md: string): string {
 
 export function MarkdownPreview({ content }: { content: string }) {
   return (
-    <div className="markdown">
+    <div className="md">
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{rewriteWikiLinks(content)}</ReactMarkdown>
     </div>
   );

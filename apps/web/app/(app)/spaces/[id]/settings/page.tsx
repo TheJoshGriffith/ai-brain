@@ -21,7 +21,7 @@ export default async function SpaceSettingsPage({
   const members = await spaceService().listMembers(session.user.id, id);
 
   return (
-    <div className="space-y-8">
+    <div className="wrap fade-in space-y-8">
       <div>
         <h1 className="text-2xl font-bold">{space.name}</h1>
         <p className="text-sm text-gray-400">Manage members and access.</p>

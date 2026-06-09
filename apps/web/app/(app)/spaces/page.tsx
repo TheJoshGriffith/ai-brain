@@ -13,7 +13,7 @@ export default async function SpacesPage() {
   const spaces = await spaceService().list(session.user.id);
 
   return (
-    <div className="space-y-6">
+    <div className="wrap fade-in space-y-6">
       <h1 className="text-2xl font-bold">Spaces</h1>
       <Card>
         <CreateSpaceForm />

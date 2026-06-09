@@ -1,17 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { ChevronLeft, Check } from "lucide-react";
 import { MarkdownPreview } from "@/components/markdown-preview";
-import { Button } from "@/components/ui";
 import { deleteDocumentAction, saveDocumentAction } from "../actions";
 
 type Status = "saved" | "dirty" | "saving" | "error";
+type Mode = "edit" | "split" | "preview";
 
 const STATUS_LABEL: Record<Status, string> = {
-  saved: "Saved",
-  dirty: "Unsaved changes",
-  saving: "Saving…",
-  error: "Save failed",
+  saved: "saved",
+  dirty: "unsaved",
+  saving: "saving…",
+  error: "save failed",
 };
 
 export function DocumentEditor({
@@ -28,6 +30,7 @@ export function DocumentEditor({
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [status, setStatus] = useState<Status>("saved");
+  const [mode, setMode] = useState<Mode>(readOnly ? "preview" : "edit");
   const [, startTransition] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -57,71 +60,82 @@ export function DocumentEditor({
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
-  const saveNow = () => {
-    if (timer.current) clearTimeout(timer.current);
-    save(title, content);
-  };
+  const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+
+  const titleInput = (
+    <input
+      value={title}
+      readOnly={readOnly}
+      onChange={(e) => { setTitle(e.target.value); scheduleSave(e.target.value, content); }}
+      placeholder="Untitled"
+      className="doc-h1"
+    />
+  );
+  const textarea = (
+    <textarea
+      value={content}
+      readOnly={readOnly}
+      onChange={(e) => { setContent(e.target.value); scheduleSave(title, e.target.value); }}
+      spellCheck={false}
+      className="editor-area"
+    />
+  );
 
   return (
-    <div className="flex h-[70vh] flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <input
-          value={title}
-          readOnly={readOnly}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            scheduleSave(e.target.value, content);
-          }}
-          placeholder="Untitled"
-          className="min-w-0 flex-1 bg-transparent text-2xl font-bold outline-none"
-        />
-        <div className="flex shrink-0 items-center gap-3">
-          {readOnly ? (
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:bg-gray-800">
-              Read only
-            </span>
-          ) : (
-            <>
-              <span
-                className={
-                  "text-xs " +
-                  (status === "error"
-                    ? "text-red-500"
-                    : status === "saved"
-                      ? "text-gray-400"
-                      : "text-brand-600")
-                }
-              >
-                {STATUS_LABEL[status]}
-              </span>
-              <Button variant="ghost" onClick={saveNow}>
-                Save
-              </Button>
-              <form action={deleteDocumentAction.bind(null, id)}>
-                <Button variant="danger" type="submit">
-                  Delete
-                </Button>
-              </form>
-            </>
-          )}
-        </div>
+    <div className="editor-main">
+      <div className="editor-bar">
+        <Link href="/documents" className="icon-btn" title="Back"><ChevronLeft /></Link>
+        {!readOnly ? (
+          <div className="seg">
+            <button data-on={mode === "edit"} onClick={() => setMode("edit")}>Edit</button>
+            <button data-on={mode === "split"} onClick={() => setMode("split")}>Split</button>
+            <button data-on={mode === "preview"} onClick={() => setMode("preview")}>Preview</button>
+          </div>
+        ) : (
+          <span className="badge"><span className="dot dot-gray" /> read only</span>
+        )}
+        <div className="spacer" />
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-muted)" }}>
+          {words} words · {STATUS_LABEL[status]}{status === "saved" ? <> via <span style={{ color: "var(--accent)" }}>write_doc</span></> : null}
+        </span>
+        {!readOnly ? (
+          <>
+            <button
+              className="btn btn-sm"
+              onClick={() => { if (timer.current) clearTimeout(timer.current); save(title, content); }}
+            >
+              <Check /> Save
+            </button>
+            <form action={deleteDocumentAction.bind(null, id)}>
+              <button type="submit" className="btn btn-ghost btn-sm" style={{ color: "var(--fg-muted)" }}>Delete</button>
+            </form>
+          </>
+        ) : null}
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-2">
-        <textarea
-          value={content}
-          readOnly={readOnly}
-          onChange={(e) => {
-            setContent(e.target.value);
-            scheduleSave(title, e.target.value);
-          }}
-          spellCheck={false}
-          className="h-full w-full resize-none rounded-md border border-gray-200 bg-white p-4 font-mono text-sm leading-relaxed outline-none focus:border-brand-500 dark:border-gray-800 dark:bg-gray-900"
-        />
-        <div className="h-full overflow-y-auto rounded-md border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-          <MarkdownPreview content={content} />
+      {mode === "split" ? (
+        <div className="editor-split">
+          <div className="editor-scroll">
+            <div className="editor-paper">{titleInput}{textarea}</div>
+          </div>
+          <div className="editor-scroll">
+            <div className="editor-paper"><MarkdownPreview content={content} /></div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="editor-scroll">
+          <div className="editor-paper">
+            {mode === "preview" ? (
+              <>
+                <h1 className="doc-h1" style={{ pointerEvents: "none" }}>{title || "Untitled"}</h1>
+                <MarkdownPreview content={content} />
+              </>
+            ) : (
+              <>{titleInput}{textarea}</>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

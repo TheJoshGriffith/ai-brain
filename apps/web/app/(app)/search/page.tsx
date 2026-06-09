@@ -36,7 +36,7 @@ export default async function SearchPage({
   const results = q.trim() ? await searchService().search(session.user.id, current.id, q) : [];
 
   return (
-    <div className="space-y-6">
+    <div className="wrap fade-in space-y-6">
       <form action="/search" className="max-w-xl">
         <Input
           name="q"

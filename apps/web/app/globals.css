@@ -1,41 +1,21 @@
 @import "tailwindcss";
+@import "./design-system.css";
 
+/* Legacy brand tokens kept so pre-redesign components (auth pages) still render.
+   New surfaces use the design-system accent variables. */
 @theme {
   --color-brand-50: oklch(0.97 0.02 270);
+  --color-brand-100: oklch(0.93 0.05 270);
   --color-brand-500: oklch(0.62 0.19 270);
   --color-brand-600: oklch(0.55 0.2 270);
   --color-brand-700: oklch(0.48 0.18 270);
+  --color-brand-900: oklch(0.3 0.12 270);
 }
 
 :root {
   color-scheme: light dark;
 }
-
 html,
 body {
   height: 100%;
 }
-
-body {
-  @apply bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
-}
-
-/* Lightweight Markdown rendering styles (no typography plugin dependency). */
-.markdown {
-  @apply text-sm leading-relaxed;
-}
-.markdown h1 { @apply mt-6 mb-3 text-2xl font-bold; }
-.markdown h2 { @apply mt-5 mb-2 text-xl font-semibold; }
-.markdown h3 { @apply mt-4 mb-2 text-lg font-semibold; }
-.markdown p { @apply my-3; }
-.markdown ul { @apply my-3 list-disc pl-6; }
-.markdown ol { @apply my-3 list-decimal pl-6; }
-.markdown li { @apply my-1; }
-.markdown a { @apply text-brand-600 hover:underline; }
-.markdown blockquote { @apply my-3 border-l-4 border-gray-300 pl-4 italic text-gray-600 dark:border-gray-700 dark:text-gray-400; }
-.markdown code { @apply rounded bg-gray-100 px-1 py-0.5 text-[0.85em] dark:bg-gray-800; }
-.markdown pre { @apply my-3 overflow-x-auto rounded-md bg-gray-900 p-3 text-gray-100; }
-.markdown pre code { @apply bg-transparent p-0; }
-.markdown table { @apply my-3 w-full border-collapse text-left; }
-.markdown th, .markdown td { @apply border border-gray-300 px-2 py-1 dark:border-gray-700; }
-.markdown hr { @apply my-6 border-gray-200 dark:border-gray-800; }

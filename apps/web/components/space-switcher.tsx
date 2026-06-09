@@ -28,7 +28,8 @@ export function SpaceSwitcher({ spaces, currentId }: { spaces: SpaceOption[]; cu
           }
           startTransition(() => switchSpaceAction(e.target.value));
         }}
-        className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-900"
+        className="crumb cur"
+        style={{ background: "none", border: "none", outline: "none", cursor: "pointer", font: "inherit", color: "var(--fg)", fontWeight: 500 }}
         aria-label="Current space"
       >
         {spaces.map((s) => (

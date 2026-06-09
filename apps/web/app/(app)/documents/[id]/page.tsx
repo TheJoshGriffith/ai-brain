@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
-import { accessService, commentService, documentService, sharingService, tagService } from "@/lib/services";
+import { accessService, authService, commentService, documentService, sharingService, tagService } from "@/lib/services";
 import { BacklinksPanel } from "@/components/backlinks-panel";
 import { DocumentEditor } from "./document-editor";
 import { TagEditor } from "./tag-editor";
@@ -21,10 +21,12 @@ export default async function DocumentPage({
   if (!access?.canRead) notFound();
   const doc = await documentService().getByIdUnscoped(id);
   if (!doc) notFound();
-  const [backlinks, docTags, comments] = await Promise.all([
+
+  const [backlinks, docTags, comments, author] = await Promise.all([
     documentService().backlinks(session.user.id, id),
     tagService().getDocumentTags(id),
     commentService().list(session.user.id, id),
+    authService().getUserById(doc.authorId),
   ]);
   const [members, links] = access.canWrite
     ? await Promise.all([
@@ -34,22 +36,56 @@ export default async function DocumentPage({
     : [[], []];
 
   return (
-    <div className="space-y-4">
-      {access.canWrite ? (
-        <div className="flex justify-end">
-          <ShareControls documentId={doc.id} members={members} links={links} />
-        </div>
-      ) : null}
+    <div className="editor-grid">
       <DocumentEditor id={doc.id} initialTitle={doc.title} initialContent={doc.content} readOnly={!access.canWrite} />
-      <TagEditor documentId={doc.id} initialTags={docTags} canWrite={access.canWrite} />
-      <CommentsPanel
-        documentId={doc.id}
-        comments={comments}
-        currentUserId={session.user.id}
-        canComment={access.canComment}
-        canManage={access.canManage}
-      />
-      <BacklinksPanel backlinks={backlinks} />
+
+      <aside className="editor-aside">
+        <div className="meta-block">
+          <h5>Properties</h5>
+          <div className="meta-row">
+            <span className="k">Access</span>
+            <span className="v"><span className="badge accent">{access.role}</span></span>
+          </div>
+          <div className="meta-row">
+            <span className="k">Author</span>
+            <span className="v">{author?.name ?? author?.email ?? "—"}</span>
+          </div>
+          <div className="meta-row">
+            <span className="k">Updated</span>
+            <span className="v mono">{new Date(doc.updatedAt).toLocaleDateString()}</span>
+          </div>
+        </div>
+
+        <div className="meta-block">
+          <h5>Index status</h5>
+          <div className="meta-row">
+            <span className="k">Embedding</span>
+            <span className="v"><span className="badge"><span className="dot dot-green" /> indexed</span></span>
+          </div>
+        </div>
+
+        <div className="meta-block">
+          <h5>Tags</h5>
+          <TagEditor documentId={doc.id} initialTags={docTags} canWrite={access.canWrite} />
+        </div>
+
+        {access.canWrite ? (
+          <div className="meta-block">
+            <h5>Share</h5>
+            <ShareControls documentId={doc.id} members={members} links={links} />
+          </div>
+        ) : null}
+
+        <CommentsPanel
+          documentId={doc.id}
+          comments={comments}
+          currentUserId={session.user.id}
+          canComment={access.canComment}
+          canManage={access.canManage}
+        />
+
+        <BacklinksPanel backlinks={backlinks} />
+      </aside>
     </div>
   );
 }
