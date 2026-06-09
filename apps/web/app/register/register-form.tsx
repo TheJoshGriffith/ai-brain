@@ -8,18 +8,19 @@ import { registerAction } from "./actions";
 
 const initial: AuthFormState = {};
 
-export function RegisterForm() {
+export function RegisterForm({ inviteToken, defaultEmail }: { inviteToken?: string; defaultEmail?: string }) {
   const [state, action, pending] = useActionState(registerAction, initial);
 
   return (
     <form action={action} className="space-y-4">
+      {inviteToken ? <input type="hidden" name="inviteToken" value={inviteToken} /> : null}
       <div className="space-y-1">
         <Label htmlFor="name">Name</Label>
         <Input id="name" name="name" type="text" autoComplete="name" />
       </div>
       <div className="space-y-1">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required />
+        <Input id="email" name="email" type="email" autoComplete="email" defaultValue={defaultEmail} required />
       </div>
       <div className="space-y-1">
         <Label htmlFor="password">Password</Label>

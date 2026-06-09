@@ -19,6 +19,9 @@ export {
   registerSchema,
   type RegisterInput,
 } from "./services/auth.service";
+export { EmailService } from "./services/email.service";
+export { AdminService, type AdminUserView } from "./services/admin.service";
+export type { RegistrationMode } from "@ai-brain/db";
 export {
   TokenService,
   parseBearer,

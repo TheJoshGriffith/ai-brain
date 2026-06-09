@@ -27,4 +27,23 @@ export const config = {
   get trashRetentionDays(): number {
     return Number(process.env.TRASH_RETENTION_DAYS ?? 30);
   },
+  get appUrl(): string {
+    return process.env.AUTH_URL || "http://localhost:3002";
+  },
+  get requireEmailVerification(): boolean {
+    return process.env.REQUIRE_EMAIL_VERIFICATION === "true";
+  },
+  get smtp(): { host: string; port: number; secure: boolean; user?: string; pass?: string } | null {
+    if (!process.env.SMTP_HOST) return null;
+    return {
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT ?? 587),
+      secure: process.env.SMTP_SECURE === "true",
+      user: process.env.SMTP_USER || undefined,
+      pass: process.env.SMTP_PASS || undefined,
+    };
+  },
+  get emailFrom(): string {
+    return process.env.EMAIL_FROM || "AI Brain <no-reply@ai-brain.local>";
+  },
 };

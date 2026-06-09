@@ -14,9 +14,10 @@ export async function registerAction(
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   const name = String(formData.get("name") ?? "").trim();
+  const inviteToken = String(formData.get("inviteToken") ?? "") || undefined;
 
   try {
-    await authService().register({ email, password, name: name || undefined });
+    await authService().register({ email, password, name: name || undefined, inviteToken });
   } catch (error) {
     if (error instanceof ZodError) {
       return { error: error.issues[0]?.message ?? "Invalid input" };

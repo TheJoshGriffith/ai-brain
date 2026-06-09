@@ -2,6 +2,7 @@ import "server-only";
 import { getDb } from "@ai-brain/db";
 import {
   AccessService,
+  AdminService,
   AuthService,
   CommentService,
   DocumentService,
@@ -16,6 +17,7 @@ import {
 
 /** Service factories bound to the singleton DB client. */
 export const authService = () => new AuthService(getDb());
+export const adminService = () => new AdminService(getDb());
 export const tokenService = () => new TokenService(getDb());
 export const documentService = () => new DocumentService(getDb());
 export const linkService = () => new LinkService(getDb());

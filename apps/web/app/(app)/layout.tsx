@@ -16,6 +16,7 @@ export default async function AppLayout({
   return (
     <AppShell
       email={session.user.email ?? ""}
+      isAdmin={session.user.isAdmin}
       spaces={spaces.map((s) => ({ id: s.id, name: s.name, role: s.role, isPersonal: s.isPersonal }))}
       current={{ id: current.id, name: current.name, role: current.role }}
       canWrite={canWrite(current.role)}

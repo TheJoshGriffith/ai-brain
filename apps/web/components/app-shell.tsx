@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Brain, Layers, Search, Settings, Users, History, Plus } from "lucide-react";
+import { Brain, Layers, Search, Settings, Shield, Users, History, Plus } from "lucide-react";
 import type { SpaceRole } from "@ai-brain/core";
 import { SpaceSwitcher } from "@/components/space-switcher";
 import { CommandPalette } from "@/components/command-palette";
@@ -20,12 +20,14 @@ const SECTION: Record<string, string> = {
 
 export function AppShell({
   email,
+  isAdmin,
   spaces,
   current,
   canWrite,
   children,
 }: {
   email: string;
+  isAdmin?: boolean;
   spaces: SpaceOption[];
   current: { id: string; name: string; role: SpaceRole };
   canWrite: boolean;
@@ -71,6 +73,7 @@ export function AppShell({
             <Search />
           </button>
           {railItem(section === "spaces", "/spaces", "Access control", Users)}
+          {isAdmin ? railItem(pathname.startsWith("/admin"), "/admin", "Admin", Shield) : null}
           {railItem(section === "settings", "/settings/tokens", "Settings", Settings)}
         </nav>
       </aside>

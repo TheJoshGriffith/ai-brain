@@ -30,6 +30,9 @@ export function LoginForm() {
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Signing in…" : "Sign in"}
       </Button>
+      <p className="text-center" style={{ marginTop: -4 }}>
+        <Link href="/forgot" className="hint link-accent" style={{ fontSize: 12.5 }}>Forgot password?</Link>
+      </p>
       <p className="text-center hint">
         No account?{" "}
         <Link href="/register" className="font-medium link-accent">

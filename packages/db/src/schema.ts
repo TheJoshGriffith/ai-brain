@@ -50,6 +50,7 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified", { withTimezone: true }),
   image: text("image"),
   passwordHash: text("password_hash"),
+  isAdmin: boolean("is_admin").notNull().default(false),
   createdAt,
   updatedAt,
 });
@@ -388,6 +389,40 @@ export const jobs = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// Account hardening — password reset, invitations, and global app settings.
+// ---------------------------------------------------------------------------
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: id(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt,
+});
+
+export const invitations = pgTable(
+  "invitations",
+  {
+    id: id(),
+    email: text("email").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    invitedBy: text("invited_by").references(() => users.id, { onDelete: "set null" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    createdAt,
+  },
+  (t) => [index("invitations_email_idx").on(t.email)],
+);
+
+export const appSettings = pgTable("app_settings", {
+  id: text("id").primaryKey().default("global"),
+  registrationMode: text("registration_mode").$type<"open" | "invite" | "closed">().notNull().default("open"),
+  updatedAt,
+});
+
+// ---------------------------------------------------------------------------
 // Inferred row types
 // ---------------------------------------------------------------------------
 
@@ -406,3 +441,5 @@ export type Comment = typeof comments.$inferSelect;
 export type Tag = typeof tags.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
 export type DocumentVersion = typeof documentVersions.$inferSelect;
+export type Invitation = typeof invitations.$inferSelect;
+export type RegistrationMode = "open" | "invite" | "closed";
