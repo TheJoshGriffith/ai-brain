@@ -1,0 +1,12 @@
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+.git
+.design-handoff
+AI-Brain.zip
+.env
+.env.*
+**/*.log
+.pgdata
+.models

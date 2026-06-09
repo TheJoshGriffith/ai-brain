@@ -30,23 +30,30 @@ infra/
   postgres/   First-boot init (enables the vector extension)
 ```
 
-## Getting started
+## Deploy with Docker Compose
+
+The whole stack runs from one image:
 
 ```bash
-# 1. Install dependencies
+cp .env.example .env        # set AUTH_SECRET (openssl rand -base64 32)
+docker compose up -d --build
+# web → http://localhost:3002 · MCP → http://localhost:8787/mcp
+```
+
+`docker compose` brings up **db** (Postgres+pgvector), a one-shot **migrate**, then
+**web**, **mcp**, and **worker** (async embedding + trash purge). The first registered
+user becomes the admin. For a dev mail catcher (captures password-reset/verification
+emails, UI on :1080): `docker compose --profile mail up -d` and set `SMTP_HOST=maildev`,
+`SMTP_PORT=1025`.
+
+## Local development
+
+```bash
 pnpm install
-
-# 2. Configure environment
-cp .env.example .env        # then edit AUTH_SECRET etc.
-
-# 3. Start Postgres (with pgvector)
-docker compose up -d db
-
-# 4. Apply the schema
-pnpm db:migrate
-
-# 5. Run the app
-pnpm dev                    # web on http://localhost:3000
+cp .env.example .env         # edit AUTH_SECRET etc.
+docker compose up -d db      # just Postgres
+pnpm db:migrate              # apply the schema
+pnpm dev                     # web :3002, mcp, and worker (turbo)
 ```
 
 ## Connect Claude / Codex (MCP)
@@ -95,6 +102,12 @@ All endpoints accept `Authorization: Bearer <PAT>` (or a session cookie):
 Each phase has a `verify-phaseN*.mts` script under `packages/core/scripts` (or
 `apps/mcp/scripts`) demonstrating it end-to-end.
 
+### Production-readiness (added)
+- Async embedding via a Postgres-backed job queue + worker; real index-status badges.
+- Version history (coalesced snapshots) + soft-delete/Trash with retention purge.
+- Markdown import/export (zip) for spaces and documents.
+- Account hardening: password reset, email verification, admin + registration modes.
+- Full Docker Compose stack (db + migrate + web + mcp + worker).
+
 ### Not yet done (follow-ups)
-- Dockerfiles + Compose services for the web/MCP apps (Postgres is already containerised).
-- Graph view, folders/workspaces, SSO, real-time collaboration.
+- Graph view, folders/workspaces, SSO, real-time collaboration, attachments/images.

@@ -14,9 +14,11 @@ export class LocalEmbeddingProvider implements EmbeddingProvider {
 
   private getPipe() {
     if (!this.pipe) {
-      this.pipe = import("@xenova/transformers").then(({ pipeline }) =>
-        pipeline("feature-extraction", this.model),
-      );
+      this.pipe = import("@xenova/transformers").then(({ pipeline, env }) => {
+        // Persist the downloaded model outside node_modules (e.g. a Docker volume).
+        if (process.env.MODEL_CACHE_DIR) env.cacheDir = process.env.MODEL_CACHE_DIR;
+        return pipeline("feature-extraction", this.model);
+      });
     }
     return this.pipe;
   }

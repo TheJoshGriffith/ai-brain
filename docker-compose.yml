@@ -1,5 +1,23 @@
 name: ai-brain
 
+# Shared environment for the app services (web, mcp, worker, migrate).
+x-app-env: &app-env
+  DATABASE_URL: postgres://ai_brain:ai_brain@db:5432/ai_brain
+  AUTH_SECRET: ${AUTH_SECRET:-change-me-please}
+  AUTH_URL: ${AUTH_URL:-http://localhost:3002}
+  EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-local}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-Xenova/bge-small-en-v1.5}
+  MODEL_CACHE_DIR: /app/.models
+  TRASH_RETENTION_DAYS: ${TRASH_RETENTION_DAYS:-30}
+  REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASS: ${SMTP_PASS:-}
+  EMAIL_FROM: ${EMAIL_FROM:-AI Brain <no-reply@ai-brain.local>}
+  MCP_HTTP_PORT: 8787
+
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -9,7 +27,6 @@ services:
       POSTGRES_PASSWORD: ai_brain
       POSTGRES_DB: ai_brain
     ports:
-      # Host port 5433 avoids clashing with other local Postgres instances.
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -20,8 +37,75 @@ services:
       timeout: 5s
       retries: 10
 
-  # Application services (web + mcp) are added once their Dockerfiles land in later phases.
-  # For local development, run `pnpm dev` against the `db` service above.
+  # One-shot: apply migrations, then exit. The app services wait for it.
+  migrate:
+    image: ai-brain:latest
+    build: .
+    command: ["pnpm", "--filter", "@ai-brain/db", "db:migrate"]
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    image: ai-brain:latest
+    command: ["pnpm", "--filter", "@ai-brain/web", "start"]
+    environment: *app-env
+    ports:
+      - "3002:3002"
+    volumes:
+      - models:/app/.models
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3002/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  mcp:
+    image: ai-brain:latest
+    command: ["pnpm", "--filter", "@ai-brain/mcp", "start:http"]
+    environment: *app-env
+    ports:
+      - "8787:8787"
+    volumes:
+      - models:/app/.models
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  worker:
+    image: ai-brain:latest
+    command: ["pnpm", "--filter", "@ai-brain/worker", "start"]
+    environment: *app-env
+    volumes:
+      - models:/app/.models
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # Optional dev mail catcher: `docker compose --profile mail up`.
+  # Point SMTP_HOST=maildev SMTP_PORT=1025 to capture emails; UI on :1080.
+  maildev:
+    image: maildev/maildev
+    profiles: ["mail"]
+    ports:
+      - "1080:1080"
+      - "1025:1025"
 
 volumes:
   pgdata:
+  models:

@@ -1,0 +1,22 @@
+# Single image for the whole monorepo; compose runs web / mcp / worker / migrate
+# off it with different commands. Simpler + more reliable than per-app standalone
+# builds given the native deps (argon2, transformers/onnxruntime, sharp, pg).
+FROM node:20-bookworm-slim AS app
+
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+RUN corepack enable
+
+WORKDIR /app
+COPY . .
+
+# Install all workspace deps (incl. native prebuilds) and build the web app.
+RUN pnpm install --frozen-lockfile
+RUN DATABASE_URL=postgres://placeholder AUTH_SECRET=placeholder pnpm --filter @ai-brain/web build
+
+ENV NODE_ENV=production
+ENV MODEL_CACHE_DIR=/app/.models
+EXPOSE 3002 8787
+
+# Default command (overridden per service in docker-compose).
+CMD ["pnpm", "--filter", "@ai-brain/web", "start"]
