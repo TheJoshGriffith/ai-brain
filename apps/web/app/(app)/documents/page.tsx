@@ -30,6 +30,7 @@ export default async function DocumentsPage({
     slug: d.slug,
     updatedAt: d.updatedAt.toISOString(),
     tags: tagMap[d.id] ?? [],
+    indexStatus: d.indexStatus,
   }));
 
   return (

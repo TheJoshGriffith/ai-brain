@@ -110,6 +110,28 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  apps/worker:
+    dependencies:
+      '@ai-brain/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@ai-brain/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.6.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.10
+        version: 20.19.42
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.4
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   packages/core:
     dependencies:
       '@ai-brain/db':

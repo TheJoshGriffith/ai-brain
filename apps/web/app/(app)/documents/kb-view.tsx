@@ -11,7 +11,14 @@ export interface KbDoc {
   slug: string;
   updatedAt: string;
   tags: string[];
+  indexStatus: "pending" | "indexed" | "failed";
 }
+
+const STATUS = {
+  indexed: { dot: "dot-green", label: "indexed" },
+  pending: { dot: "dot-amber", label: "indexing" },
+  failed: { dot: "dot-gray", label: "failed" },
+} as const;
 
 export function KbView({
   docs,
@@ -125,7 +132,7 @@ export function KbView({
                         {d.tags.slice(0, 3).map((t) => <span key={t} className="tag">{t}</span>)}
                       </div>
                     </td>
-                    <td><span className="badge"><span className="dot dot-green" /> indexed</span></td>
+                    <td><span className="badge"><span className={`dot ${STATUS[d.indexStatus].dot}`} /> {STATUS[d.indexStatus].label}</span></td>
                     <td className="mono">{new Date(d.updatedAt).toLocaleDateString()}</td>
                   </tr>
                 ))}

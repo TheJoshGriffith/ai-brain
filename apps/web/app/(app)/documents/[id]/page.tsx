@@ -6,6 +6,7 @@ import { DocumentEditor } from "./document-editor";
 import { TagEditor } from "./tag-editor";
 import { ShareControls } from "./share-controls";
 import { CommentsPanel } from "./comments-panel";
+import { reindexAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -60,8 +61,19 @@ export default async function DocumentPage({
           <h5>Index status</h5>
           <div className="meta-row">
             <span className="k">Embedding</span>
-            <span className="v"><span className="badge"><span className="dot dot-green" /> indexed</span></span>
+            <span className="v">
+              <span className="badge">
+                <span className={`dot ${doc.indexStatus === "indexed" ? "dot-green" : doc.indexStatus === "pending" ? "dot-amber" : "dot-gray"}`} />
+                {doc.indexStatus === "pending" ? "indexing" : doc.indexStatus}
+              </span>
+            </span>
           </div>
+          {access.canWrite ? (
+            <form action={reindexAction}>
+              <input type="hidden" name="id" value={doc.id} />
+              <button type="submit" className="btn btn-sm" style={{ width: "100%" }}>Re-index now</button>
+            </form>
+          ) : null}
         </div>
 
         <div className="meta-block">

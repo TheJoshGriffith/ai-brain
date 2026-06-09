@@ -88,6 +88,7 @@ export {
 } from "./services/sharing.service";
 export { CommentService, type CommentView } from "./services/comment.service";
 export { IndexingService } from "./services/indexing.service";
+export { QueueService, type JobType } from "./services/queue.service";
 export { chunkContent } from "./search/chunk";
 export {
   getEmbeddingProvider,

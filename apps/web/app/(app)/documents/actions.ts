@@ -48,3 +48,9 @@ export async function setDocumentTagsAction(id: string, tags: string[]): Promise
   revalidatePath("/documents");
   return set;
 }
+
+export async function reindexAction(formData: FormData) {
+  const userId = await requireUser();
+  await documentService().requestReindex(userId, String(formData.get("id")));
+  revalidatePath(`/documents/${String(formData.get("id"))}`);
+}

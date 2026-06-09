@@ -92,6 +92,7 @@ export class TagService {
         slug: documents.slug,
         updatedAt: documents.updatedAt,
         createdAt: documents.createdAt,
+        indexStatus: documents.indexStatus,
       })
       .from(documentTags)
       .innerJoin(tags, eq(tags.id, documentTags.tagId))

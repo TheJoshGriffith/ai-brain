@@ -4,7 +4,7 @@ import { z } from "zod";
 import { deriveTitle, parseMarkdown, slugify } from "../markdown/parse";
 import { AccessService } from "./access.service";
 import { LinkService } from "./link.service";
-import { IndexingService } from "./indexing.service";
+import { QueueService } from "./queue.service";
 
 export const createDocumentSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
@@ -35,7 +35,7 @@ export class DocumentForbiddenError extends Error {
 /** Lightweight projection for list views (no full content). */
 export type DocumentSummary = Pick<
   Document,
-  "id" | "title" | "slug" | "updatedAt" | "createdAt"
+  "id" | "title" | "slug" | "updatedAt" | "createdAt" | "indexStatus"
 >;
 
 const SUMMARY_COLUMNS = {
@@ -44,22 +44,18 @@ const SUMMARY_COLUMNS = {
   slug: documents.slug,
   updatedAt: documents.updatedAt,
   createdAt: documents.createdAt,
+  indexStatus: documents.indexStatus,
 } as const;
 
 export class DocumentService {
   private readonly linkService: LinkService;
   private readonly access: AccessService;
-  private indexer: IndexingService | null = null;
+  private readonly queue: QueueService;
 
   constructor(private readonly db: Database) {
     this.linkService = new LinkService(db);
     this.access = new AccessService(db);
-  }
-
-  /** Lazily constructed so misconfigured embedding providers don't break CRUD. */
-  private getIndexer(): IndexingService {
-    if (!this.indexer) this.indexer = new IndexingService(this.db);
-    return this.indexer;
+    this.queue = new QueueService(db);
   }
 
   /** Create a document in a space. Requires editor+ membership in that space. */
@@ -81,7 +77,8 @@ export class DocumentService {
 
     await this.linkService.syncOutboundLinks(doc);
     await this.linkService.resolveInboundLinks(doc);
-    await this.getIndexer().reindex(doc);
+    // Embedding happens asynchronously in the worker (keeps writes fast).
+    await this.queue.enqueueReindex(doc.id);
     return doc;
   }
 
@@ -128,9 +125,16 @@ export class DocumentService {
       ? await this.ensureUniqueSlug(existing.spaceId, slugify(slug), id)
       : existing.slug;
 
+    const contentChanged = content !== undefined && nextContent !== existing.content;
     const [doc] = await this.db
       .update(documents)
-      .set({ title: nextTitle, slug: nextSlug, content: nextContent, frontmatter })
+      .set({
+        title: nextTitle,
+        slug: nextSlug,
+        content: nextContent,
+        frontmatter,
+        ...(contentChanged ? { indexStatus: "pending" as const } : {}),
+      })
       .where(eq(documents.id, id))
       .returning();
     if (!doc) throw new DocumentNotFoundError();
@@ -139,8 +143,17 @@ export class DocumentService {
     if (doc.title !== existing.title || doc.slug !== existing.slug) {
       await this.linkService.resolveInboundLinks(doc);
     }
-    if (content !== undefined) await this.getIndexer().reindex(doc);
+    if (contentChanged) await this.queue.enqueueReindex(doc.id);
     return doc;
+  }
+
+  /** Enqueue a manual re-index for a document the user can write. */
+  async requestReindex(userId: string, id: string): Promise<void> {
+    const access = await this.access.resolveDocumentAccess(userId, id);
+    if (!access) throw new DocumentNotFoundError();
+    if (!access.canWrite) throw new DocumentForbiddenError();
+    await this.db.update(documents).set({ indexStatus: "pending" }).where(eq(documents.id, id));
+    await this.queue.enqueueReindex(id);
   }
 
   /** Documents that link to this one (within its space). */

@@ -115,6 +115,17 @@ export function buildMcpServer(ctx: McpContext): McpServer {
   );
 
   server.tool(
+    "reindex_document",
+    "Queue a rebuild of a document's embeddings (e.g. after a bulk edit). Indexing runs asynchronously.",
+    { id: z.string() },
+    ({ id }) =>
+      tool(ctx, "documents:write", async () => {
+        await ctx.documents.requestReindex(ctx.userId, id);
+        return ok({ queued: true });
+      })(),
+  );
+
+  server.tool(
     "list_links",
     "List the outgoing [[wiki links]] from a document, with their resolution status.",
     { id: z.string() },

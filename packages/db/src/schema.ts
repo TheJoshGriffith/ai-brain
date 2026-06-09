@@ -182,6 +182,9 @@ export const documents = pgTable(
       (): SQL =>
         sql`to_tsvector('english', coalesce(title, '') || ' ' || coalesce(content, ''))`,
     ),
+    // Embedding/index lifecycle — stamped by the background worker.
+    indexStatus: text("index_status").$type<"pending" | "indexed" | "failed">().notNull().default("pending"),
+    indexedAt: timestamp("indexed_at", { withTimezone: true }),
     createdAt,
     updatedAt,
   },
@@ -339,6 +342,27 @@ export const documentTags = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// Jobs — Postgres-backed background queue (claimed with FOR UPDATE SKIP LOCKED).
+// ---------------------------------------------------------------------------
+
+export const jobs = pgTable(
+  "jobs",
+  {
+    id: id(),
+    type: text("type").$type<"reindex" | "purge_trash">().notNull(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    status: text("status").$type<"pending" | "running" | "done" | "failed">().notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    runAt: timestamp("run_at", { withTimezone: true }).notNull().defaultNow(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    createdAt,
+    updatedAt,
+  },
+  (t) => [index("jobs_status_run_at_idx").on(t.status, t.runAt)],
+);
+
+// ---------------------------------------------------------------------------
 // Inferred row types
 // ---------------------------------------------------------------------------
 
@@ -355,3 +379,4 @@ export type DocumentShare = typeof documentShares.$inferSelect;
 export type Link = typeof links.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type Tag = typeof tags.$inferSelect;
+export type Job = typeof jobs.$inferSelect;
