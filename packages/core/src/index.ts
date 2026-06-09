@@ -50,5 +50,13 @@ export {
   type BacklinkRef,
   type OutboundLink,
 } from "./services/link.service";
-
-// Search service is added in a later phase.
+export { SearchService, type SearchResult } from "./services/search.service";
+export { IndexingService } from "./services/indexing.service";
+export { chunkContent } from "./search/chunk";
+export {
+  getEmbeddingProvider,
+  LocalEmbeddingProvider,
+  VoyageEmbeddingProvider,
+  OpenAIEmbeddingProvider,
+  type EmbeddingProvider,
+} from "./embeddings";

@@ -3,6 +3,7 @@ import { documents, type Database, type Document } from "@ai-brain/db";
 import { z } from "zod";
 import { deriveTitle, parseMarkdown, slugify } from "../markdown/parse";
 import { LinkService } from "./link.service";
+import { IndexingService } from "./indexing.service";
 
 export const createDocumentSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
@@ -40,9 +41,16 @@ const SUMMARY_COLUMNS = {
 
 export class DocumentService {
   private readonly linkService: LinkService;
+  private indexer: IndexingService | null = null;
 
   constructor(private readonly db: Database) {
     this.linkService = new LinkService(db);
+  }
+
+  /** Lazily constructed so misconfigured embedding providers don't break CRUD. */
+  private getIndexer(): IndexingService {
+    if (!this.indexer) this.indexer = new IndexingService(this.db);
+    return this.indexer;
   }
 
   async create(ownerId: string, input: CreateDocumentInput): Promise<Document> {
@@ -70,6 +78,7 @@ export class DocumentService {
     // waiting for a document with this title/slug to exist.
     await this.linkService.syncOutboundLinks(doc);
     await this.linkService.resolveInboundLinks(doc);
+    await this.getIndexer().reindex(doc);
     return doc;
   }
 
@@ -121,6 +130,7 @@ export class DocumentService {
     if (doc.title !== existing.title || doc.slug !== existing.slug) {
       await this.linkService.resolveInboundLinks(doc);
     }
+    if (content !== undefined) await this.getIndexer().reindex(doc);
     return doc;
   }
 
