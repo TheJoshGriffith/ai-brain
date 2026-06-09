@@ -7,6 +7,8 @@ export const TOKEN_SCOPES = [
   "documents:read",
   "documents:write",
   "search:read",
+  "spaces:read",
+  "spaces:write",
 ] as const;
 export type TokenScope = (typeof TOKEN_SCOPES)[number];
 

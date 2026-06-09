@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { users, type Database, type User } from "@ai-brain/db";
 import { z } from "zod";
 import { hashPassword, verifyPassword } from "../auth/password";
+import { SpaceService } from "./space.service";
 
 export const registerSchema = z.object({
   email: z.string().email().toLowerCase().trim(),
@@ -29,6 +30,9 @@ export class AuthService {
       .values({ email, name: name ?? null, passwordHash })
       .returning();
     if (!user) throw new AuthError("Failed to create user");
+
+    // Every user gets a Personal space to land in.
+    await new SpaceService(this.db).ensurePersonalSpace(user.id);
     return user;
   }
 

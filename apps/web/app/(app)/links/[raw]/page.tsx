@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { linkService } from "@/lib/services";
+import { getSpacesAndCurrent } from "@/lib/current-space";
 
 /**
  * Resolves a clicked `[[wiki link]]` to its document and redirects there.
@@ -16,6 +17,7 @@ export default async function LinkResolverPage({
 
   const { raw } = await params;
   const target = decodeURIComponent(raw);
-  const id = await linkService().resolveTarget(session.user.id, target);
+  const { current } = await getSpacesAndCurrent(session.user.id);
+  const id = await linkService().resolveTarget(current.id, target);
   redirect(id ? `/documents/${id}` : `/documents?missing=${encodeURIComponent(target)}`);
 }

@@ -12,7 +12,9 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const q = url.searchParams.get("q") ?? "";
+  const spaceId = url.searchParams.get("spaceId");
+  if (!spaceId) return NextResponse.json({ error: "spaceId is required" }, { status: 400 });
   const limit = Number(url.searchParams.get("limit") ?? "10");
-  const results = await searchService().search(principal.userId, q, { limit });
-  return NextResponse.json({ query: q, results });
+  const results = await searchService().search(principal.userId, spaceId, q, { limit });
+  return NextResponse.json({ query: q, spaceId, results });
 }

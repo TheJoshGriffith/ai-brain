@@ -1,10 +1,12 @@
 import "server-only";
 import { getDb } from "@ai-brain/db";
 import {
+  AccessService,
   AuthService,
   DocumentService,
   LinkService,
   SearchService,
+  SpaceService,
   TokenService,
 } from "@ai-brain/core";
 
@@ -14,3 +16,5 @@ export const tokenService = () => new TokenService(getDb());
 export const documentService = () => new DocumentService(getDb());
 export const linkService = () => new LinkService(getDb());
 export const searchService = () => new SearchService(getDb());
+export const spaceService = () => new SpaceService(getDb());
+export const accessService = () => new AccessService(getDb());

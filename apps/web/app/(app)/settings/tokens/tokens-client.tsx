@@ -9,6 +9,8 @@ const SCOPES: { value: TokenScope; label: string }[] = [
   { value: "documents:read", label: "Read documents" },
   { value: "documents:write", label: "Write documents" },
   { value: "search:read", label: "Search" },
+  { value: "spaces:read", label: "Read spaces" },
+  { value: "spaces:write", label: "Manage spaces & members" },
 ];
 
 const initial: CreateTokenState = {};

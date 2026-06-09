@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { Database } from "@ai-brain/db";
 import { getEmbeddingProvider, type EmbeddingProvider } from "../embeddings";
+import { AccessService } from "./access.service";
 
 export interface SearchResult {
   documentId: string;
@@ -22,31 +23,36 @@ interface Ranked {
 const RRF_K = 60;
 
 export class SearchService {
+  private readonly access: AccessService;
   constructor(
     private readonly db: Database,
     private readonly provider: EmbeddingProvider = getEmbeddingProvider(),
-  ) {}
+  ) {
+    this.access = new AccessService(db);
+  }
 
   /**
-   * Hybrid search: Postgres full-text + pgvector semantic similarity, merged
-   * with Reciprocal Rank Fusion. Falls back to full-text alone if embedding the
-   * query fails.
+   * Hybrid search within a space: Postgres full-text + pgvector semantic
+   * similarity, merged with Reciprocal Rank Fusion. Falls back to full-text
+   * alone if embedding the query fails. Requires space membership.
    */
   async search(
-    ownerId: string,
+    userId: string,
+    spaceId: string,
     query: string,
     opts: { limit?: number } = {},
   ): Promise<SearchResult[]> {
+    if (!(await this.access.resolveSpaceRole(userId, spaceId))) return [];
     const limit = Math.min(Math.max(opts.limit ?? 10, 1), 50);
     const pool = limit * 3;
     if (!query.trim()) return [];
 
-    const fts = await this.fullTextSearch(ownerId, query, pool);
+    const fts = await this.fullTextSearch(spaceId, query, pool);
 
     let semantic: Ranked[] = [];
     try {
       const [vector] = await this.provider.embed([query]);
-      if (vector) semantic = await this.semanticSearch(ownerId, vector, pool);
+      if (vector) semantic = await this.semanticSearch(spaceId, vector, pool);
     } catch (error) {
       console.warn("[search] semantic search unavailable, using full-text only:", error);
     }
@@ -54,7 +60,7 @@ export class SearchService {
     return this.fuse(fts, semantic, limit);
   }
 
-  private async fullTextSearch(ownerId: string, query: string, limit: number): Promise<Ranked[]> {
+  private async fullTextSearch(spaceId: string, query: string, limit: number): Promise<Ranked[]> {
     const { rows } = await this.db.execute(sql`
       select
         id as "documentId",
@@ -63,7 +69,7 @@ export class SearchService {
         ts_headline('english', content, websearch_to_tsquery('english', ${query}),
           'MaxFragments=1,MaxWords=24,MinWords=8,StartSel=<<,StopSel=>>') as snippet
       from documents
-      where owner_id = ${ownerId}
+      where space_id = ${spaceId}
         and content_tsv @@ websearch_to_tsquery('english', ${query})
       order by ts_rank_cd(content_tsv, websearch_to_tsquery('english', ${query})) desc
       limit ${limit}
@@ -71,13 +77,13 @@ export class SearchService {
     return rows as unknown as Ranked[];
   }
 
-  private async semanticSearch(ownerId: string, vector: number[], limit: number): Promise<Ranked[]> {
+  private async semanticSearch(spaceId: string, vector: number[], limit: number): Promise<Ranked[]> {
     const literal = `[${vector.join(",")}]`;
     const { rows } = await this.db.execute(sql`
       select d.id as "documentId", d.title, d.slug, null as snippet
       from document_chunks c
       join documents d on d.id = c.document_id
-      where d.owner_id = ${ownerId}
+      where d.space_id = ${spaceId}
       group by d.id, d.title, d.slug
       order by min(c.embedding <=> ${literal}::vector) asc
       limit ${limit}

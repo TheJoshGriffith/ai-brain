@@ -3,6 +3,7 @@ import {
   DocumentService,
   LinkService,
   SearchService,
+  SpaceService,
   TokenService,
   type TokenScope,
 } from "@ai-brain/core";
@@ -14,6 +15,7 @@ export interface McpContext {
   documents: DocumentService;
   links: LinkService;
   search: SearchService;
+  spaces: SpaceService;
 }
 
 /** Resolves a PAT to a scoped context, or null if the token is invalid. */
@@ -28,6 +30,7 @@ export async function authenticate(token: string | undefined): Promise<McpContex
     documents: new DocumentService(db),
     links: new LinkService(db),
     search: new SearchService(db),
+    spaces: new SpaceService(db),
   };
 }
 

@@ -1,5 +1,6 @@
 import { sql, type SQL } from "drizzle-orm";
 import {
+  boolean,
   customType,
   index,
   integer,
@@ -115,6 +116,49 @@ export const personalAccessTokens = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// Spaces — named containers for documents (vaults/workspaces). Access to a
+// document flows from membership in its space. Every user gets a Personal space.
+// ---------------------------------------------------------------------------
+
+/** Roles, lowest → highest privilege. Validated in core (see TOKEN_SCOPES/roles). */
+export const SPACE_ROLES = ["viewer", "commenter", "editor", "owner"] as const;
+export type SpaceRole = (typeof SPACE_ROLES)[number];
+
+export const spaces = pgTable(
+  "spaces",
+  {
+    id: id(),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    isPersonal: boolean("is_personal").notNull().default(false),
+    createdAt,
+    updatedAt,
+  },
+  (t) => [index("spaces_owner_idx").on(t.ownerId)],
+);
+
+export const spaceMembers = pgTable(
+  "space_members",
+  {
+    spaceId: text("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").$type<SpaceRole>().notNull().default("viewer"),
+    createdAt,
+  },
+  (t) => [
+    primaryKey({ columns: [t.spaceId, t.userId] }),
+    index("space_members_user_idx").on(t.userId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
 // Documents — Markdown is the source of truth. content_tsv is a stored
 // generated column (title + content) indexed with GIN for full-text search.
 // ---------------------------------------------------------------------------
@@ -123,7 +167,11 @@ export const documents = pgTable(
   "documents",
   {
     id: id(),
-    ownerId: text("owner_id")
+    spaceId: text("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    // Attribution only — access is governed by space membership, not this.
+    authorId: text("author_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
@@ -138,10 +186,53 @@ export const documents = pgTable(
     updatedAt,
   },
   (t) => [
-    uniqueIndex("documents_owner_slug_idx").on(t.ownerId, t.slug),
-    index("documents_owner_idx").on(t.ownerId),
+    uniqueIndex("documents_space_slug_idx").on(t.spaceId, t.slug),
+    index("documents_space_idx").on(t.spaceId),
+    index("documents_author_idx").on(t.authorId),
     index("documents_content_tsv_idx").using("gin", t.contentTsv),
   ],
+);
+
+// ---------------------------------------------------------------------------
+// Per-document access overrides (grant a specific user a role on one document,
+// independent of space membership) and public share links.
+// ---------------------------------------------------------------------------
+
+export const documentMembers = pgTable(
+  "document_members",
+  {
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").$type<SpaceRole>().notNull().default("viewer"),
+    createdAt,
+  },
+  (t) => [
+    primaryKey({ columns: [t.documentId, t.userId] }),
+    index("document_members_user_idx").on(t.userId),
+  ],
+);
+
+export const documentShares = pgTable(
+  "document_shares",
+  {
+    id: id(),
+    resourceType: text("resource_type").$type<"document" | "space">().notNull(),
+    resourceId: text("resource_id").notNull(),
+    role: text("role").$type<SpaceRole>().notNull().default("viewer"),
+    allowAnonymous: boolean("allow_anonymous").notNull().default(false),
+    tokenHash: text("token_hash").notNull().unique(),
+    prefix: text("prefix").notNull(),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    createdAt,
+  },
+  (t) => [index("document_shares_resource_idx").on(t.resourceType, t.resourceId)],
 );
 
 // ---------------------------------------------------------------------------
@@ -204,13 +295,13 @@ export const tags = pgTable(
   "tags",
   {
     id: id(),
-    ownerId: text("owner_id")
+    spaceId: text("space_id")
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+      .references(() => spaces.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     createdAt,
   },
-  (t) => [uniqueIndex("tags_owner_name_idx").on(t.ownerId, t.name)],
+  (t) => [uniqueIndex("tags_space_name_idx").on(t.spaceId, t.name)],
 );
 
 export const documentTags = pgTable(
@@ -233,8 +324,12 @@ export const documentTags = pgTable(
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type PersonalAccessToken = typeof personalAccessTokens.$inferSelect;
+export type Space = typeof spaces.$inferSelect;
+export type SpaceMember = typeof spaceMembers.$inferSelect;
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;
 export type DocumentChunk = typeof documentChunks.$inferSelect;
+export type DocumentMember = typeof documentMembers.$inferSelect;
+export type DocumentShare = typeof documentShares.$inferSelect;
 export type Link = typeof links.$inferSelect;
 export type Tag = typeof tags.$inferSelect;

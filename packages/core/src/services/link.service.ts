@@ -17,7 +17,7 @@ export interface OutboundLink {
 /** Minimal shape needed to (re)compute links for a document. */
 interface DocRef {
   id: string;
-  ownerId: string;
+  spaceId: string;
   title: string;
   slug: string;
   content: string;
@@ -29,7 +29,7 @@ export class LinkService {
   /**
    * Recomputes a document's outbound links from its content: clears existing
    * links, then inserts one row per unique wiki-link, resolving each target to
-   * a document owned by the same user (by slug, then title) where possible.
+   * a document in the same space (by slug, then title) where possible.
    */
   async syncOutboundLinks(doc: DocRef): Promise<void> {
     const wikiLinks = extractWikiLinks(doc.content);
@@ -40,11 +40,11 @@ export class LinkService {
 
       const targets = wikiLinks.map((l) => l.target);
       const slugs = targets.map(slugify);
-      // Resolve all candidate targets for this owner in one query.
+      // Resolve all candidate targets within this space in one query.
       const candidates = await tx
         .select({ id: documents.id, title: documents.title, slug: documents.slug })
         .from(documents)
-        .where(eq(documents.ownerId, doc.ownerId));
+        .where(eq(documents.spaceId, doc.spaceId));
 
       const bySlug = new Map(candidates.map((c) => [c.slug, c.id]));
       const byTitle = new Map(candidates.map((c) => [c.title.toLowerCase(), c.id]));
@@ -68,12 +68,12 @@ export class LinkService {
    * (e.g. after it is created or its title/slug changes).
    */
   async resolveInboundLinks(doc: DocRef): Promise<number> {
-    // Unresolved links owned by the same user whose raw target matches by slug or title.
+    // Unresolved links in the same space whose raw target matches by slug or title.
     const unresolved = await this.db
       .select({ id: links.id, targetRaw: links.targetRaw })
       .from(links)
       .innerJoin(documents, eq(links.sourceDocumentId, documents.id))
-      .where(and(isNull(links.targetDocumentId), eq(documents.ownerId, doc.ownerId)));
+      .where(and(isNull(links.targetDocumentId), eq(documents.spaceId, doc.spaceId)));
 
     const matches = unresolved.filter(
       (l) => slugify(l.targetRaw) === doc.slug || l.targetRaw.toLowerCase() === doc.title.toLowerCase(),
@@ -87,8 +87,8 @@ export class LinkService {
     return matches.length;
   }
 
-  /** Documents that link TO the given document. */
-  backlinks(ownerId: string, documentId: string): Promise<BacklinkRef[]> {
+  /** Documents that link TO the given document (within its space). */
+  backlinks(spaceId: string, documentId: string): Promise<BacklinkRef[]> {
     return this.db
       .selectDistinct({
         documentId: documents.id,
@@ -97,7 +97,7 @@ export class LinkService {
       })
       .from(links)
       .innerJoin(documents, eq(links.sourceDocumentId, documents.id))
-      .where(and(eq(links.targetDocumentId, documentId), eq(documents.ownerId, ownerId)));
+      .where(and(eq(links.targetDocumentId, documentId), eq(documents.spaceId, spaceId)));
   }
 
   /** A document's outbound links (resolved and unresolved). */
@@ -110,17 +110,17 @@ export class LinkService {
   }
 
   /**
-   * Resolves a raw wiki-link target to a document id for an owner, by slug then
-   * title. Used by the link resolver route.
+   * Resolves a raw wiki-link target to a document id within a space, by slug
+   * then title. Used by the link resolver route.
    */
-  async resolveTarget(ownerId: string, raw: string): Promise<string | null> {
+  async resolveTarget(spaceId: string, raw: string): Promise<string | null> {
     const slug = slugify(raw);
     const row = await this.db
       .select({ id: documents.id })
       .from(documents)
       .where(
         and(
-          eq(documents.ownerId, ownerId),
+          eq(documents.spaceId, spaceId),
           sql`(${documents.slug} = ${slug} or lower(${documents.title}) = ${raw.toLowerCase()})`,
         ),
       )

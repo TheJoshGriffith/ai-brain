@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { canWrite } from "@ai-brain/core";
 import { auth } from "@/auth";
 import { documentService } from "@/lib/services";
+import { getSpacesAndCurrent } from "@/lib/current-space";
 import { Button } from "@/components/ui";
 import { createDocumentAction } from "./actions";
 
@@ -8,15 +10,26 @@ export const dynamic = "force-dynamic";
 
 export default async function DocumentsPage() {
   const session = await auth();
-  const docs = session?.user ? await documentService().list(session.user.id) : [];
+  if (!session?.user) return null;
+  const { current } = await getSpacesAndCurrent(session.user.id);
+  const docs = await documentService().list(session.user.id, current.id);
+  const mayWrite = canWrite(current.role);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Documents</h1>
-        <form action={createDocumentAction}>
-          <Button type="submit">New document</Button>
-        </form>
+        <div>
+          <h1 className="text-2xl font-bold">Documents</h1>
+          <p className="text-sm text-gray-400">
+            {current.name}
+            {current.role !== "owner" ? ` · you are a ${current.role}` : ""}
+          </p>
+        </div>
+        {mayWrite ? (
+          <form action={createDocumentAction}>
+            <Button type="submit">New document</Button>
+          </form>
+        ) : null}
       </div>
 
       {docs.length === 0 ? (

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { documentService } from "@/lib/services";
+import { getSpacesAndCurrent } from "@/lib/current-space";
 
 async function requireUser() {
   const session = await auth();
@@ -13,7 +14,8 @@ async function requireUser() {
 
 export async function createDocumentAction() {
   const userId = await requireUser();
-  const doc = await documentService().create(userId, {
+  const { current } = await getSpacesAndCurrent(userId);
+  const doc = await documentService().create(userId, current.id, {
     title: "Untitled",
     content: "# Untitled\n\n",
   });

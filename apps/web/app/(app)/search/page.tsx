@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { searchService } from "@/lib/services";
+import { getSpacesAndCurrent } from "@/lib/current-space";
 import { Input } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -29,8 +30,10 @@ export default async function SearchPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const session = await auth();
+  if (!session?.user) return null;
   const { q = "" } = await searchParams;
-  const results = session?.user && q.trim() ? await searchService().search(session.user.id, q) : [];
+  const { current } = await getSpacesAndCurrent(session.user.id);
+  const results = q.trim() ? await searchService().search(session.user.id, current.id, q) : [];
 
   return (
     <div className="space-y-6">

@@ -31,12 +31,39 @@ export {
 export {
   DocumentService,
   DocumentNotFoundError,
+  DocumentForbiddenError,
   createDocumentSchema,
   updateDocumentSchema,
   type CreateDocumentInput,
   type UpdateDocumentInput,
   type DocumentSummary,
 } from "./services/document.service";
+
+// Spaces, membership & access control
+export {
+  ROLE_RANK,
+  maxRole,
+  canRead,
+  canComment,
+  canWrite,
+  canManage,
+} from "./auth/roles";
+export type { SpaceRole } from "@ai-brain/db";
+export {
+  AccessService,
+  type Access,
+  type DocumentAccess,
+} from "./services/access.service";
+export {
+  SpaceService,
+  SpaceError,
+  SpaceForbiddenError,
+  createSpaceSchema,
+  addMemberSchema,
+  SPACE_ROLE_VALUES,
+  type SpaceWithRole,
+  type MemberView,
+} from "./services/space.service";
 export {
   parseMarkdown,
   slugify,

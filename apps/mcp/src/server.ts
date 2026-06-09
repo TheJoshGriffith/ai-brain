@@ -33,19 +33,34 @@ export function buildMcpServer(ctx: McpContext): McpServer {
   const server = new McpServer({ name: "ai-brain", version: "0.1.0" });
 
   server.tool(
+    "list_spaces",
+    "List the spaces (workspaces) the user can access, with their role in each. Most tools require a space_id from here.",
+    {},
+    () => tool(ctx, "spaces:read", async () => ok(await ctx.spaces.list(ctx.userId)))(),
+  );
+
+  server.tool(
     "search_documents",
-    "Hybrid full-text + semantic search across the user's documents. Use this first to find relevant notes by keyword or meaning.",
-    { query: z.string().describe("Search query — keywords or a natural-language description"), limit: z.number().int().min(1).max(50).optional() },
-    ({ query, limit }) =>
-      tool(ctx, "search:read", async () => ok(await ctx.search.search(ctx.userId, query, { limit })))(),
+    "Hybrid full-text + semantic search within a space. Use this first to find relevant notes by keyword or meaning.",
+    {
+      space_id: z.string().describe("The space to search (from list_spaces)"),
+      query: z.string().describe("Search query — keywords or a natural-language description"),
+      limit: z.number().int().min(1).max(50).optional(),
+    },
+    ({ space_id, query, limit }) =>
+      tool(ctx, "search:read", async () => ok(await ctx.search.search(ctx.userId, space_id, query, { limit })))(),
   );
 
   server.tool(
     "list_documents",
-    "List the user's documents (most recently updated first).",
-    { limit: z.number().int().min(1).max(200).optional(), offset: z.number().int().min(0).optional() },
-    ({ limit, offset }) =>
-      tool(ctx, "documents:read", async () => ok(await ctx.documents.list(ctx.userId, { limit, offset })))(),
+    "List documents in a space (most recently updated first).",
+    {
+      space_id: z.string().describe("The space to list (from list_spaces)"),
+      limit: z.number().int().min(1).max(200).optional(),
+      offset: z.number().int().min(0).optional(),
+    },
+    ({ space_id, limit, offset }) =>
+      tool(ctx, "documents:read", async () => ok(await ctx.documents.list(ctx.userId, space_id, { limit, offset })))(),
   );
 
   server.tool(
@@ -61,10 +76,15 @@ export function buildMcpServer(ctx: McpContext): McpServer {
 
   server.tool(
     "create_document",
-    "Create a new Markdown document. Title is derived from the content (frontmatter or first heading) if omitted. Use [[wiki links]] to reference other documents.",
-    { title: z.string().optional(), content: z.string().optional(), slug: z.string().optional() },
-    ({ title, content, slug }) =>
-      tool(ctx, "documents:write", async () => ok(await ctx.documents.create(ctx.userId, { title, content: content ?? "", slug })))(),
+    "Create a new Markdown document in a space. Title is derived from the content (frontmatter or first heading) if omitted. Use [[wiki links]] to reference other documents.",
+    {
+      space_id: z.string().describe("The space to create the document in (from list_spaces)"),
+      title: z.string().optional(),
+      content: z.string().optional(),
+      slug: z.string().optional(),
+    },
+    ({ space_id, title, content, slug }) =>
+      tool(ctx, "documents:write", async () => ok(await ctx.documents.create(ctx.userId, space_id, { title, content: content ?? "", slug })))(),
   );
 
   server.tool(
@@ -107,14 +127,19 @@ export function buildMcpServer(ctx: McpContext): McpServer {
     "documents",
     new ResourceTemplate("brain://documents/{id}", {
       list: async () => {
-        const docs = await ctx.documents.list(ctx.userId, { limit: 200 });
-        return {
-          resources: docs.map((d) => ({
-            uri: `brain://documents/${d.id}`,
-            name: d.title,
-            mimeType: "text/markdown",
-          })),
-        };
+        const spaces = await ctx.spaces.list(ctx.userId);
+        const perSpace = await Promise.all(
+          spaces.map((s) =>
+            ctx.documents.list(ctx.userId, s.id, { limit: 200 }).then((docs) =>
+              docs.map((d) => ({
+                uri: `brain://documents/${d.id}`,
+                name: `${s.name} / ${d.title}`,
+                mimeType: "text/markdown",
+              })),
+            ),
+          ),
+        );
+        return { resources: perSpace.flat() };
       },
     }),
     async (uri, { id }) => {
