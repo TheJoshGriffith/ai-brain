@@ -28,4 +28,20 @@ export {
   type TokenSummary,
 } from "./services/token.service";
 
-// Document / link / search services are added in later phases.
+export {
+  DocumentService,
+  DocumentNotFoundError,
+  createDocumentSchema,
+  updateDocumentSchema,
+  type CreateDocumentInput,
+  type UpdateDocumentInput,
+  type DocumentSummary,
+} from "./services/document.service";
+export {
+  parseMarkdown,
+  slugify,
+  deriveTitle,
+  type ParsedMarkdown,
+} from "./markdown/parse";
+
+// Link / search services are added in later phases.

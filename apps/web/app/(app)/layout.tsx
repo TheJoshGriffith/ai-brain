@@ -20,6 +20,9 @@ export default async function AppLayout({
             <Link href="/dashboard" className="font-semibold">
               AI Brain
             </Link>
+            <Link href="/documents" className="text-gray-500 hover:text-gray-900 dark:hover:text-gray-100">
+              Documents
+            </Link>
             <Link href="/settings/tokens" className="text-gray-500 hover:text-gray-900 dark:hover:text-gray-100">
               Tokens
             </Link>
