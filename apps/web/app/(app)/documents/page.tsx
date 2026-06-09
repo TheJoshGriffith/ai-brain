@@ -1,18 +1,28 @@
 import Link from "next/link";
 import { canWrite } from "@ai-brain/core";
 import { auth } from "@/auth";
-import { documentService } from "@/lib/services";
+import { documentService, tagService } from "@/lib/services";
 import { getSpacesAndCurrent } from "@/lib/current-space";
 import { Button } from "@/components/ui";
 import { createDocumentAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function DocumentsPage() {
+export default async function DocumentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tag?: string }>;
+}) {
   const session = await auth();
   if (!session?.user) return null;
   const { current } = await getSpacesAndCurrent(session.user.id);
-  const docs = await documentService().list(session.user.id, current.id);
+  const { tag } = await searchParams;
+  const [docs, spaceTags] = await Promise.all([
+    tag
+      ? tagService().listDocumentsByTag(session.user.id, current.id, tag)
+      : documentService().list(session.user.id, current.id),
+    tagService().listForSpace(session.user.id, current.id),
+  ]);
   const mayWrite = canWrite(current.role);
 
   return (
@@ -31,6 +41,32 @@ export default async function DocumentsPage() {
           </form>
         ) : null}
       </div>
+
+      {spaceTags.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <Link
+            href="/documents"
+            className={
+              "rounded-full px-2 py-0.5 " +
+              (!tag ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600 dark:bg-gray-800")
+            }
+          >
+            all
+          </Link>
+          {spaceTags.map((t) => (
+            <Link
+              key={t.id}
+              href={`/documents?tag=${encodeURIComponent(t.name)}`}
+              className={
+                "rounded-full px-2 py-0.5 " +
+                (tag === t.name ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600 dark:bg-gray-800")
+              }
+            >
+              #{t.name}
+            </Link>
+          ))}
+        </div>
+      ) : null}
 
       {docs.length === 0 ? (
         <p className="text-sm text-gray-500">

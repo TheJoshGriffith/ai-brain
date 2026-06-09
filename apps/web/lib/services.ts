@@ -7,6 +7,7 @@ import {
   LinkService,
   SearchService,
   SpaceService,
+  TagService,
   TokenService,
 } from "@ai-brain/core";
 
@@ -18,3 +19,4 @@ export const linkService = () => new LinkService(getDb());
 export const searchService = () => new SearchService(getDb());
 export const spaceService = () => new SpaceService(getDb());
 export const accessService = () => new AccessService(getDb());
+export const tagService = () => new TagService(getDb());

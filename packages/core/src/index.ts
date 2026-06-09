@@ -78,6 +78,7 @@ export {
   type OutboundLink,
 } from "./services/link.service";
 export { SearchService, type SearchResult } from "./services/search.service";
+export { TagService, normalizeTag } from "./services/tag.service";
 export { IndexingService } from "./services/indexing.service";
 export { chunkContent } from "./search/chunk";
 export {

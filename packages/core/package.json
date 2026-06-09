@@ -10,7 +10,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test --test-reporter=spec src/auth/token.test.ts src/auth/roles.test.ts src/markdown/parse.test.ts src/search/chunk.test.ts"
+    "test": "node --import tsx --test --test-reporter=spec src/auth/token.test.ts src/auth/roles.test.ts src/markdown/parse.test.ts src/search/chunk.test.ts src/services/tag.test.ts"
   },
   "dependencies": {
     "@ai-brain/db": "workspace:*",

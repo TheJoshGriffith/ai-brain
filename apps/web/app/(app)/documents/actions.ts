@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { documentService } from "@/lib/services";
+import { documentService, tagService } from "@/lib/services";
 import { getSpacesAndCurrent } from "@/lib/current-space";
 
 async function requireUser() {
@@ -39,4 +39,12 @@ export async function deleteDocumentAction(id: string) {
   await documentService().remove(userId, id);
   revalidatePath("/documents");
   redirect("/documents");
+}
+
+export async function setDocumentTagsAction(id: string, tags: string[]): Promise<string[]> {
+  const userId = await requireUser();
+  const set = await tagService().setDocumentTags(userId, id, tags);
+  revalidatePath(`/documents/${id}`);
+  revalidatePath("/documents");
+  return set;
 }

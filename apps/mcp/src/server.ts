@@ -122,6 +122,22 @@ export function buildMcpServer(ctx: McpContext): McpServer {
       tool(ctx, "documents:read", async () => ok(await ctx.links.outboundLinks(id)))(),
   );
 
+  server.tool(
+    "list_tags",
+    "List the tags defined in a space.",
+    { space_id: z.string() },
+    ({ space_id }) =>
+      tool(ctx, "documents:read", async () => ok(await ctx.tags.listForSpace(ctx.userId, space_id)))(),
+  );
+
+  server.tool(
+    "set_document_tags",
+    "Replace a document's tags with the given list. Tags are created in the document's space as needed.",
+    { id: z.string(), tags: z.array(z.string()) },
+    ({ id, tags }) =>
+      tool(ctx, "documents:write", async () => ok({ tags: await ctx.tags.setDocumentTags(ctx.userId, id, tags) }))(),
+  );
+
   // Resource: browse/read documents by URI (brain://documents/{id}).
   server.resource(
     "documents",

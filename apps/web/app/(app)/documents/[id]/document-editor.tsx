@@ -18,10 +18,12 @@ export function DocumentEditor({
   id,
   initialTitle,
   initialContent,
+  readOnly = false,
 }: {
   id: string;
   initialTitle: string;
   initialContent: string;
+  readOnly?: boolean;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
@@ -65,6 +67,7 @@ export function DocumentEditor({
       <div className="flex items-center justify-between gap-3">
         <input
           value={title}
+          readOnly={readOnly}
           onChange={(e) => {
             setTitle(e.target.value);
             scheduleSave(e.target.value, content);
@@ -73,32 +76,41 @@ export function DocumentEditor({
           className="min-w-0 flex-1 bg-transparent text-2xl font-bold outline-none"
         />
         <div className="flex shrink-0 items-center gap-3">
-          <span
-            className={
-              "text-xs " +
-              (status === "error"
-                ? "text-red-500"
-                : status === "saved"
-                  ? "text-gray-400"
-                  : "text-brand-600")
-            }
-          >
-            {STATUS_LABEL[status]}
-          </span>
-          <Button variant="ghost" onClick={saveNow}>
-            Save
-          </Button>
-          <form action={deleteDocumentAction.bind(null, id)}>
-            <Button variant="danger" type="submit">
-              Delete
-            </Button>
-          </form>
+          {readOnly ? (
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:bg-gray-800">
+              Read only
+            </span>
+          ) : (
+            <>
+              <span
+                className={
+                  "text-xs " +
+                  (status === "error"
+                    ? "text-red-500"
+                    : status === "saved"
+                      ? "text-gray-400"
+                      : "text-brand-600")
+                }
+              >
+                {STATUS_LABEL[status]}
+              </span>
+              <Button variant="ghost" onClick={saveNow}>
+                Save
+              </Button>
+              <form action={deleteDocumentAction.bind(null, id)}>
+                <Button variant="danger" type="submit">
+                  Delete
+                </Button>
+              </form>
+            </>
+          )}
         </div>
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-2">
         <textarea
           value={content}
+          readOnly={readOnly}
           onChange={(e) => {
             setContent(e.target.value);
             scheduleSave(title, e.target.value);
