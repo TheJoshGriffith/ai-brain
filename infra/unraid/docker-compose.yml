@@ -30,7 +30,7 @@ services:
     <<: *env-file
     volumes:
       - /mnt/user/appdata/ai-brain/postgres:/var/lib/postgresql/data
-      - /mnt/user/appdata/ai-brain/init/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    # pgvector is enabled by the first DB migration — no init script needed.
     # Uncomment to reach Postgres from the LAN (e.g. a DB GUI). Not required.
     # ports:
     #   - "5433:5432"

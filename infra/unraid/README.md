@@ -11,13 +11,15 @@ image plus three small files in appdata.
 ```
 /mnt/user/appdata/ai-brain/
 ├── ai-brain.env        # secrets + config, loaded into every container (chmod 600)
-├── init/init.sql       # enables pgvector on first DB init
 ├── postgres/           # Postgres data
 └── models/             # embedding-model cache (downloaded once, ~120 MB)
 ```
 
-`docker-compose.yml` references those paths directly — no project-level `.env`
-or `${VAR}` interpolation, which is the usual Compose-Manager footgun.
+`docker-compose.yml` references those paths with **absolute** appdata paths — no
+relative paths, no named volumes, and no project-level `.env`/`${VAR}`
+interpolation (the usual Compose-Manager footguns). `ai-brain.env` is the only
+file you must create (the setup script does it); pgvector is enabled by the
+first DB migration, so there's no init-script file to place.
 
 ## One-time setup (run on the Unraid host, as root)
 

@@ -24,13 +24,8 @@ PGID="${PGID:-100}"
 WEB_PORT="${WEB_PORT:-3002}"
 
 echo "==> Creating appdata tree under $APPDATA"
-mkdir -p "$APPDATA/postgres" "$APPDATA/models" "$APPDATA/init"
-
-echo "==> Writing Postgres init script (enables pgvector on first init)"
-cat > "$APPDATA/init/init.sql" <<'SQL'
--- Runs once, when the Postgres data volume is first initialised.
-CREATE EXTENSION IF NOT EXISTS vector;
-SQL
+mkdir -p "$APPDATA/postgres" "$APPDATA/models"
+# (pgvector is enabled by the first DB migration, so no init script is needed.)
 
 if [[ -f "$ENV_FILE" ]]; then
   echo "==> $ENV_FILE already exists — leaving it untouched (preserving secrets)."
@@ -83,7 +78,7 @@ EOF
 fi
 
 echo "==> Setting ownership to $PUID:$PGID (Postgres re-owns its data dir itself)"
-chown -R "$PUID:$PGID" "$APPDATA/models" "$APPDATA/init" 2>/dev/null || true
+chown -R "$PUID:$PGID" "$APPDATA/models" 2>/dev/null || true
 chown "$PUID:$PGID" "$ENV_FILE" 2>/dev/null || true
 
 cat <<EOF
@@ -91,8 +86,7 @@ cat <<EOF
 ✅ Appdata ready at $APPDATA
    ├── ai-brain.env        (secrets + config — keep private)
    ├── postgres/           (database files)
-   ├── models/             (embedding model cache, downloaded once)
-   └── init/init.sql       (pgvector bootstrap)
+   └── models/             (embedding model cache, downloaded once)
 
 Next steps:
   1. Ensure the GHCR package is public, OR authenticate the Unraid host:

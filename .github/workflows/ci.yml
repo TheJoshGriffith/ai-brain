@@ -57,8 +57,8 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Enable pgvector
-        run: psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS vector"
+      # pgvector is enabled by the first migration itself (CREATE EXTENSION),
+      # so no explicit setup step — this also verifies that path works.
       - name: Apply migrations
         run: pnpm db:migrate
       - name: Run verification scripts (no-embedding, deterministic)
