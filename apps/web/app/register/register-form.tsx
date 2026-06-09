@@ -31,15 +31,15 @@ export function RegisterForm() {
           minLength={8}
           required
         />
-        <p className="text-xs text-gray-400">At least 8 characters.</p>
+        <p className="hint">At least 8 characters.</p>
       </div>
       <FieldError>{state.error}</FieldError>
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Creating account…" : "Create account"}
       </Button>
-      <p className="text-center text-sm text-gray-500">
+      <p className="text-center hint">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-brand-600 hover:underline">
+        <Link href="/login" className="font-medium link-accent">
           Sign in
         </Link>
       </p>

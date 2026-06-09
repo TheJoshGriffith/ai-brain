@@ -6,20 +6,12 @@ import { Input } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
-/** Renders a ts_headline snippet, bolding the <<matched>> fragments. */
+/** Renders a ts_headline snippet, marking the <<matched>> fragments. */
 function Snippet({ text }: { text: string }) {
   const parts = text.split(/<<(.+?)>>/g);
   return (
-    <p className="mt-1 text-sm text-gray-500">
-      {parts.map((part, i) =>
-        i % 2 === 1 ? (
-          <mark key={i} className="bg-brand-100 text-brand-900 dark:bg-brand-500/30 dark:text-brand-100">
-            {part}
-          </mark>
-        ) : (
-          <span key={i}>{part}</span>
-        ),
-      )}
+    <p className="pi-snip" style={{ margin: "4px 0 0", fontSize: 13 }}>
+      {parts.map((part, i) => (i % 2 === 1 ? <mark key={i}>{part}</mark> : <span key={i}>{part}</span>))}
     </p>
   );
 }
@@ -36,39 +28,37 @@ export default async function SearchPage({
   const results = q.trim() ? await searchService().search(session.user.id, current.id, q) : [];
 
   return (
-    <div className="wrap fade-in space-y-6">
-      <form action="/search" className="max-w-xl">
-        <Input
-          name="q"
-          defaultValue={q}
-          placeholder="Search your brain — keywords or meaning…"
-          autoFocus
-          aria-label="Search query"
-        />
+    <div className="wrap fade-in" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">Search</h1>
+          <p className="page-sub">Hybrid full-text + semantic search across {current.name}. Tip: press ⌘K anywhere.</p>
+        </div>
+      </div>
+      <form action="/search" style={{ maxWidth: 560 }}>
+        <Input name="q" defaultValue={q} placeholder="Search — keywords or meaning…" autoFocus aria-label="Search query" />
       </form>
 
       {q.trim() ? (
         results.length === 0 ? (
-          <p className="text-sm text-gray-500">No results for “{q}”.</p>
+          <p className="hint">No results for “{q}”.</p>
         ) : (
-          <ul className="space-y-4">
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {results.map((r) => (
-              <li key={r.documentId}>
-                <Link href={`/documents/${r.documentId}`} className="font-medium text-brand-600 hover:underline">
+              <div key={r.documentId}>
+                <Link href={`/documents/${r.documentId}`} className="link-accent" style={{ fontWeight: 500 }}>
                   {r.title}
                 </Link>
-                <span className="ml-2 text-xs text-gray-400">
+                <span className="faint" style={{ marginLeft: 8, fontSize: 11.5, fontFamily: "var(--font-mono)" }}>
                   {r.matched.join(" + ")}
                 </span>
                 {r.snippet ? <Snippet text={r.snippet} /> : null}
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )
       ) : (
-        <p className="text-sm text-gray-400">
-          Search combines full-text and semantic similarity, so paraphrases match too.
-        </p>
+        <p className="hint">Search combines full-text and semantic similarity, so paraphrases match too.</p>
       )}
     </div>
   );

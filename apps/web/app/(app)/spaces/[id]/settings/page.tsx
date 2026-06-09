@@ -21,18 +21,20 @@ export default async function SpaceSettingsPage({
   const members = await spaceService().listMembers(session.user.id, id);
 
   return (
-    <div className="wrap fade-in space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">{space.name}</h1>
-        <p className="text-sm text-gray-400">Manage members and access.</p>
+    <div className="wrap fade-in" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">{space.name}</h1>
+          <p className="page-sub">Manage members and access.</p>
+        </div>
       </div>
 
       <MembersManager spaceId={id} members={members} currentUserId={session.user.id} />
 
       {!space.isPersonal ? (
-        <Card className="border-red-300/50">
-          <h2 className="font-semibold text-red-600">Danger zone</h2>
-          <p className="mb-3 mt-1 text-sm text-gray-500">
+        <Card style={{ borderColor: "color-mix(in oklch, oklch(0.62 0.2 25) 40%, var(--border))" }}>
+          <h2 style={{ margin: 0, fontWeight: 600, color: "oklch(0.62 0.2 25)" }}>Danger zone</h2>
+          <p className="muted" style={{ margin: "4px 0 12px", fontSize: 13 }}>
             Deleting a space permanently removes all of its documents.
           </p>
           <form action={deleteSpaceAction}>

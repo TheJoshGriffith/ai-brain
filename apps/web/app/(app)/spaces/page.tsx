@@ -13,40 +13,40 @@ export default async function SpacesPage() {
   const spaces = await spaceService().list(session.user.id);
 
   return (
-    <div className="wrap fade-in space-y-6">
-      <h1 className="text-2xl font-bold">Spaces</h1>
+    <div className="wrap fade-in" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">Access control</h1>
+          <p className="page-sub">Spaces you belong to. Owners can invite members and manage roles.</p>
+        </div>
+      </div>
       <Card>
         <CreateSpaceForm />
       </Card>
 
-      <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 dark:divide-gray-800 dark:border-gray-800">
+      <div className="list">
         {spaces.map((s) => (
-          <li key={s.id} className="flex items-center justify-between px-4 py-3">
+          <div key={s.id} className="list-row">
             <div>
-              <p className="font-medium">
+              <p style={{ margin: 0, fontWeight: 500 }}>
                 {s.name}
-                {s.isPersonal ? <span className="ml-2 text-xs text-gray-400">personal</span> : null}
+                {s.isPersonal ? <span className="faint" style={{ marginLeft: 8, fontSize: 11.5 }}>personal</span> : null}
               </p>
-              <p className="text-xs text-gray-400">your role: {s.role}</p>
+              <p className="faint" style={{ margin: 0, fontSize: 12 }}>your role: {s.role}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {s.role === "owner" ? (
-                <Link
-                  href={`/spaces/${s.id}/settings`}
-                  className="text-sm text-gray-500 hover:underline"
-                >
+                <Link href={`/spaces/${s.id}/settings`} className="muted" style={{ fontSize: 13, textDecoration: "none" }}>
                   Settings
                 </Link>
               ) : null}
               <form action={switchSpaceAction.bind(null, s.id)}>
-                <Button type="submit" variant="ghost">
-                  Open
-                </Button>
+                <Button type="submit" variant="ghost" className="btn-sm">Open</Button>
               </form>
             </div>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

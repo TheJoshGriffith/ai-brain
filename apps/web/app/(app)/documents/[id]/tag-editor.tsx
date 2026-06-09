@@ -23,7 +23,6 @@ export function TagEditor({
       setTags(saved);
     });
   };
-
   const add = () => {
     const name = draft.trim().toLowerCase();
     if (name && !tags.includes(name)) commit([...tags, name]);
@@ -31,20 +30,17 @@ export function TagEditor({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {tags.length === 0 && !canWrite ? <span className="text-xs text-gray-400">No tags</span> : null}
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
+      {tags.length === 0 && !canWrite ? <span className="hint">No tags</span> : null}
       {tags.map((t) => (
-        <span
-          key={t}
-          className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700 dark:bg-brand-500/15 dark:text-brand-200"
-        >
-          #{t}
+        <span key={t} className="tag" data-on="true" style={{ cursor: "default" }}>
+          {t}
           {canWrite ? (
             <button
               type="button"
               onClick={() => commit(tags.filter((x) => x !== t))}
-              className="text-brand-400 hover:text-brand-700"
               aria-label={`Remove ${t}`}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: "0 0 0 2px", lineHeight: 1 }}
             >
               ×
             </button>
@@ -55,15 +51,10 @@ export function TagEditor({
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              add();
-            }
-          }}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
           onBlur={add}
-          placeholder="add tag…"
-          className="w-24 bg-transparent text-xs outline-none placeholder:text-gray-400"
+          placeholder="+ add tag"
+          style={{ width: 80, background: "none", border: "none", outline: "none", fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--fg-muted)" }}
         />
       ) : null}
     </div>

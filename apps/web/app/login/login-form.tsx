@@ -30,9 +30,9 @@ export function LoginForm() {
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Signing in…" : "Sign in"}
       </Button>
-      <p className="text-center text-sm text-gray-500">
+      <p className="text-center hint">
         No account?{" "}
-        <Link href="/register" className="font-medium text-brand-600 hover:underline">
+        <Link href="/register" className="font-medium link-accent">
           Create one
         </Link>
       </p>

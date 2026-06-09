@@ -40,78 +40,75 @@ export function ShareControls({
     : "";
 
   return (
-    <div className="relative">
-      <Button variant="ghost" onClick={() => setOpen((o) => !o)}>
-        Share
+    <div>
+      <Button variant="ghost" className="btn-sm" onClick={() => setOpen((o) => !o)}>
+        {open ? "Close" : "Share…"}
       </Button>
       {open ? (
-        <div className="absolute right-0 z-10 mt-2 w-96 space-y-5 rounded-lg border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-800 dark:bg-gray-900">
-          {/* People */}
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
-            <h3 className="mb-2 text-sm font-semibold">People</h3>
-            <form action={addMember} className="flex items-start gap-2">
-              <Input name="email" type="email" placeholder="person@example.com" required className="flex-1" />
-              <select name="role" defaultValue="viewer" className="rounded-md border border-gray-300 px-2 py-2 text-sm dark:border-gray-700 dark:bg-gray-900">
+            <div className="form-label">People</div>
+            <form action={addMember} style={{ display: "flex", gap: 6 }}>
+              <Input name="email" type="email" placeholder="person@example.com" required style={{ flex: 1 }} />
+              <select name="role" defaultValue="viewer" className="field" style={{ width: "auto" }}>
                 {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
-              <Button type="submit" disabled={addingMember}>Add</Button>
+              <Button type="submit" className="btn-sm" disabled={addingMember}>Add</Button>
             </form>
             <FieldError>{memberState.error}</FieldError>
-            <ul className="mt-2 space-y-1">
+            <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 4 }}>
               {members.map((m) => (
-                <li key={m.userId} className="flex items-center justify-between text-sm">
-                  <span className="truncate">{m.email} <span className="text-xs text-gray-400">· {m.role}</span></span>
+                <div key={m.userId} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5 }}>
+                  <span className="muted" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {m.email} · {m.role}
+                  </span>
                   <button
-                    type="button"
-                    className="text-xs text-red-500 hover:underline"
+                    type="button" className="btn-danger" style={{ background: "none", border: "none", padding: 0, fontSize: 11.5, cursor: "pointer" }}
                     onClick={() => startTransition(() => removeDocMemberAction(documentId, m.userId))}
                   >
                     remove
                   </button>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
 
-          {/* Public links */}
           <div>
-            <h3 className="mb-2 text-sm font-semibold">Public link</h3>
-            <form action={createLink} className="flex items-center gap-2">
-              <select name="role" defaultValue="viewer" className="rounded-md border border-gray-300 px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-900">
+            <div className="form-label">Public link</div>
+            <form action={createLink} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <select name="role" defaultValue="viewer" className="field" style={{ width: "auto" }}>
                 {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
-              <label className="flex items-center gap-1 text-xs text-gray-500">
+              <label className="hint" style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <input type="checkbox" name="allowAnonymous" /> anonymous
               </label>
-              <Button type="submit" disabled={creatingLink}>Create</Button>
+              <Button type="submit" className="btn-sm" disabled={creatingLink}>Create</Button>
             </form>
             <FieldError>{linkState.error}</FieldError>
             {shareUrl ? (
-              <div className="mt-2 flex items-center gap-2">
-                <code className="flex-1 overflow-x-auto rounded bg-gray-900 px-2 py-1 text-xs text-gray-100">{shareUrl}</code>
+              <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
+                <code className="code-field" style={{ flex: 1, fontSize: 11 }}>{shareUrl}</code>
                 <button
-                  type="button"
-                  className="text-xs text-brand-600 hover:underline"
+                  type="button" className="link-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11.5 }}
                   onClick={async () => { await navigator.clipboard.writeText(shareUrl); setCopied(true); }}
                 >
                   {copied ? "copied" : "copy"}
                 </button>
               </div>
             ) : null}
-            <ul className="mt-2 space-y-1">
+            <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 4 }}>
               {links.map((l) => (
-                <li key={l.id} className="flex items-center justify-between text-xs text-gray-500">
-                  <span><code>{l.prefix}…</code> · {l.role}{l.allowAnonymous ? " · anonymous" : ""}{l.expiresAt ? ` · expires ${new Date(l.expiresAt).toLocaleDateString()}` : ""}</span>
+                <div key={l.id} className="faint" style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5 }}>
+                  <span><code style={{ fontFamily: "var(--font-mono)" }}>{l.prefix}…</code> · {l.role}{l.allowAnonymous ? " · anonymous" : ""}</span>
                   <button
-                    type="button"
-                    className="text-red-500 hover:underline"
+                    type="button" className="btn-danger" style={{ background: "none", border: "none", padding: 0, fontSize: 11.5, cursor: "pointer" }}
                     onClick={() => startTransition(() => revokeShareLinkAction(documentId, l.id))}
                   >
                     revoke
                   </button>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
       ) : null}

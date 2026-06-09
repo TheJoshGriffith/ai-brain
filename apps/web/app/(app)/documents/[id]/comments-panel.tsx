@@ -2,7 +2,7 @@
 
 import { useActionState, useTransition } from "react";
 import type { CommentView } from "@ai-brain/core";
-import { Button, FieldError } from "@/components/ui";
+import { Button, FieldError, Textarea } from "@/components/ui";
 import { addCommentAction, removeCommentAction, type CommentFormState } from "./comment-actions";
 
 export function CommentsPanel({
@@ -25,47 +25,45 @@ export function CommentsPanel({
   const [, startTransition] = useTransition();
 
   return (
-    <section className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
-      <h2 className="mb-3 text-sm font-semibold text-gray-500">
-        Comments {comments.length > 0 ? `(${comments.length})` : ""}
-      </h2>
+    <div className="meta-block">
+      <h5>Comments {comments.length > 0 ? `(${comments.length})` : ""}</h5>
 
-      <ul className="space-y-3">
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {comments.map((c) => (
-          <li key={c.id} className="text-sm">
-            <div className="flex items-center gap-2">
-              <span className="font-medium">{c.authorName ?? c.authorEmail}</span>
-              <span className="text-xs text-gray-400">{new Date(c.createdAt).toLocaleString()}</span>
+          <div key={c.id} style={{ fontSize: 12.5 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontWeight: 500 }}>{c.authorName ?? c.authorEmail}</span>
+              <span className="faint" style={{ fontFamily: "var(--font-mono)", fontSize: 10.5 }}>
+                {new Date(c.createdAt).toLocaleDateString()}
+              </span>
               {c.authorId === currentUserId || canManage ? (
                 <button
                   type="button"
-                  className="text-xs text-red-500 hover:underline"
+                  className="btn-danger"
+                  style={{ background: "none", border: "none", padding: 0, fontSize: 11, cursor: "pointer" }}
                   onClick={() => startTransition(() => removeCommentAction(documentId, c.id))}
                 >
                   delete
                 </button>
               ) : null}
             </div>
-            <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">{c.body}</p>
-          </li>
+            <p className="muted" style={{ whiteSpace: "pre-wrap", margin: "2px 0 0" }}>{c.body}</p>
+          </div>
         ))}
-        {comments.length === 0 ? <li className="text-sm text-gray-400">No comments yet.</li> : null}
-      </ul>
+        {comments.length === 0 ? <p className="hint">No comments yet.</p> : null}
+      </div>
 
       {canComment ? (
-        <form action={action} className="mt-4 space-y-2">
-          <textarea
-            name="body"
-            rows={2}
-            placeholder="Add a comment…"
-            className="w-full rounded-md border border-gray-300 bg-white p-2 text-sm outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900"
-          />
+        <form action={action} style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+          <Textarea name="body" rows={2} placeholder="Add a comment…" />
           <FieldError>{state.error}</FieldError>
-          <Button type="submit" disabled={pending}>
-            {pending ? "Posting…" : "Comment"}
-          </Button>
+          <div>
+            <Button type="submit" variant="primary" className="btn-sm" disabled={pending}>
+              {pending ? "Posting…" : "Comment"}
+            </Button>
+          </div>
         </form>
       ) : null}
-    </section>
+    </div>
   );
 }

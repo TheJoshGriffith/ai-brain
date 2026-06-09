@@ -24,7 +24,7 @@ export default async function SharePage({
       <Shell>
         <Card>
           <h1 className="text-lg font-semibold">This link isn’t valid</h1>
-          <p className="mt-1 text-sm text-gray-500">It may have been revoked or expired.</p>
+          <p className="hint mt-1">It may have been revoked or expired.</p>
         </Card>
       </Shell>
     );
@@ -38,10 +38,10 @@ export default async function SharePage({
       <Shell>
         <Card>
           <h1 className="text-lg font-semibold">Sign in to view this document</h1>
-          <p className="mt-1 text-sm text-gray-500">The owner restricted this link to signed-in users.</p>
+          <p className="hint mt-1">The owner restricted this link to signed-in users.</p>
           <Link
             href={`/login?callbackUrl=/share/${token}`}
-            className="mt-4 inline-block rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white"
+            className="btn btn-primary" style={{ marginTop: 16 }}
           >
             Sign in
           </Link>
@@ -62,7 +62,7 @@ export default async function SharePage({
   return (
     <Shell>
       <div className="mb-4 flex items-center justify-between">
-        <span className="text-xs text-gray-400">Shared document · {grant.role} access</span>
+        <span className="hint">Shared document · {grant.role} access</span>
         {session?.user ? (
           <form action={claimShareAction.bind(null, token)}>
             <Button type="submit" variant="ghost">
@@ -72,7 +72,7 @@ export default async function SharePage({
         ) : null}
       </div>
       <h1 className="mb-4 text-3xl font-bold">{doc.title}</h1>
-      <article className="rounded-lg border border-gray-200 p-6 dark:border-gray-800">
+      <article className="card">
         <MarkdownPreview content={doc.content} />
       </article>
     </Shell>
