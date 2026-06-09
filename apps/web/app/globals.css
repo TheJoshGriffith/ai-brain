@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: oklch(0.97 0.02 270);
+  --color-brand-500: oklch(0.62 0.19 270);
+  --color-brand-600: oklch(0.55 0.2 270);
+  --color-brand-700: oklch(0.48 0.18 270);
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
+}

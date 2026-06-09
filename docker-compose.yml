@@ -1,0 +1,27 @@
+name: ai-brain
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ai_brain
+      POSTGRES_PASSWORD: ai_brain
+      POSTGRES_DB: ai_brain
+    ports:
+      # Host port 5433 avoids clashing with other local Postgres instances.
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_brain -d ai_brain"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Application services (web + mcp) are added once their Dockerfiles land in later phases.
+  # For local development, run `pnpm dev` against the `db` service above.
+
+volumes:
+  pgdata:

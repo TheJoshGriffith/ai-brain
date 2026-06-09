@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+.next/
+out/
+*.tsbuildinfo
+
+# Turbo
+.turbo/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Local model cache (transformers.js)
+.models/
+.cache/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+
+# Docker volumes (local bind mounts, if any)
+.pgdata/
