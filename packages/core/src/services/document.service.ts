@@ -2,6 +2,7 @@ import { and, desc, eq, like, ne } from "drizzle-orm";
 import { documents, type Database, type Document } from "@ai-brain/db";
 import { z } from "zod";
 import { deriveTitle, parseMarkdown, slugify } from "../markdown/parse";
+import { LinkService } from "./link.service";
 
 export const createDocumentSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
@@ -38,7 +39,11 @@ const SUMMARY_COLUMNS = {
 } as const;
 
 export class DocumentService {
-  constructor(private readonly db: Database) {}
+  private readonly linkService: LinkService;
+
+  constructor(private readonly db: Database) {
+    this.linkService = new LinkService(db);
+  }
 
   async create(ownerId: string, input: CreateDocumentInput): Promise<Document> {
     const { title, content, slug } = createDocumentSchema.parse(input);
@@ -60,6 +65,11 @@ export class DocumentService {
       })
       .returning();
     if (!doc) throw new Error("Failed to create document");
+
+    // Index this doc's outbound links, and resolve any existing links that were
+    // waiting for a document with this title/slug to exist.
+    await this.linkService.syncOutboundLinks(doc);
+    await this.linkService.resolveInboundLinks(doc);
     return doc;
   }
 
@@ -105,7 +115,18 @@ export class DocumentService {
       .where(and(eq(documents.id, id), eq(documents.ownerId, ownerId)))
       .returning();
     if (!doc) throw new DocumentNotFoundError();
+
+    await this.linkService.syncOutboundLinks(doc);
+    // Title/slug may have changed — re-resolve inbound links that now match.
+    if (doc.title !== existing.title || doc.slug !== existing.slug) {
+      await this.linkService.resolveInboundLinks(doc);
+    }
     return doc;
+  }
+
+  /** Documents that link to this one. */
+  backlinks(ownerId: string, documentId: string) {
+    return this.linkService.backlinks(ownerId, documentId);
   }
 
   async remove(ownerId: string, id: string): Promise<boolean> {

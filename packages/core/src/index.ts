@@ -41,7 +41,14 @@ export {
   parseMarkdown,
   slugify,
   deriveTitle,
+  extractWikiLinks,
   type ParsedMarkdown,
+  type WikiLink,
 } from "./markdown/parse";
+export {
+  LinkService,
+  type BacklinkRef,
+  type OutboundLink,
+} from "./services/link.service";
 
-// Link / search services are added in later phases.
+// Search service is added in a later phase.

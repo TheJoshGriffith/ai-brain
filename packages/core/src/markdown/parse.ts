@@ -17,6 +17,36 @@ export function parseMarkdown(content: string): ParsedMarkdown {
   }
 }
 
+export interface WikiLink {
+  /** The raw target text inside the brackets (before any `|alias` or `#section`). */
+  target: string;
+  /** Optional display alias from `[[target|alias]]`. */
+  alias?: string;
+}
+
+const WIKILINK_RE = /\[\[([^\]\n]+?)\]\]/g;
+
+/**
+ * Extracts `[[wiki links]]` from Markdown, supporting `[[target|alias]]` and
+ * `[[target#section]]`. De-duplicates by target (case-insensitive), preserving
+ * the first alias seen.
+ */
+export function extractWikiLinks(content: string): WikiLink[] {
+  const seen = new Map<string, WikiLink>();
+  for (const match of content.matchAll(WIKILINK_RE)) {
+    const inner = match[1]?.trim();
+    if (!inner) continue;
+    const [left, alias] = inner.split("|", 2);
+    const target = (left ?? "").split("#", 1)[0]?.trim();
+    if (!target) continue;
+    const key = target.toLowerCase();
+    if (!seen.has(key)) {
+      seen.set(key, alias?.trim() ? { target, alias: alias.trim() } : { target });
+    }
+  }
+  return [...seen.values()];
+}
+
 /** Converts a title into a URL-safe slug. */
 export function slugify(input: string): string {
   const base = input

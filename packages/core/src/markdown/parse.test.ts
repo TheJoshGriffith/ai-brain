@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { deriveTitle, parseMarkdown, slugify } from "./parse";
+import { deriveTitle, extractWikiLinks, parseMarkdown, slugify } from "./parse";
 
 test("slugify normalises titles", () => {
   assert.equal(slugify("Hello, World!"), "hello-world");
@@ -19,6 +19,19 @@ test("parseMarkdown splits frontmatter", () => {
 test("parseMarkdown tolerates no frontmatter and bad YAML", () => {
   assert.deepEqual(parseMarkdown("plain text").frontmatter, {});
   assert.equal(parseMarkdown("plain text").body, "plain text");
+});
+
+test("extractWikiLinks handles aliases, sections, and dedupes", () => {
+  const links = extractWikiLinks(
+    "See [[Roadmap]] and [[Roadmap|the plan]]. Also [[Specs#api]] and [[ Roadmap ]].",
+  );
+  assert.equal(links.length, 2);
+  assert.deepEqual(links[0], { target: "Roadmap" });
+  assert.deepEqual(links[1], { target: "Specs" });
+});
+
+test("extractWikiLinks ignores empties", () => {
+  assert.deepEqual(extractWikiLinks("[[]] and [[ ]] and text"), []);
 });
 
 test("deriveTitle prefers frontmatter, then heading, then first line", () => {

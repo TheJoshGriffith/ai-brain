@@ -61,7 +61,7 @@ export function DocumentEditor({
   };
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col gap-3">
+    <div className="flex h-[70vh] flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <input
           value={title}
