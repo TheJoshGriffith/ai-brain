@@ -3,6 +3,7 @@ import { getDb } from "@ai-brain/db";
 import {
   AccessService,
   AuthService,
+  CommentService,
   DocumentService,
   LinkService,
   SearchService,
@@ -22,3 +23,4 @@ export const spaceService = () => new SpaceService(getDb());
 export const accessService = () => new AccessService(getDb());
 export const tagService = () => new TagService(getDb());
 export const sharingService = () => new SharingService(getDb());
+export const commentService = () => new CommentService(getDb());

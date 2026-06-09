@@ -138,6 +138,22 @@ export function buildMcpServer(ctx: McpContext): McpServer {
       tool(ctx, "documents:write", async () => ok({ tags: await ctx.tags.setDocumentTags(ctx.userId, id, tags) }))(),
   );
 
+  server.tool(
+    "list_comments",
+    "List the comments on a document.",
+    { id: z.string() },
+    ({ id }) =>
+      tool(ctx, "documents:read", async () => ok(await ctx.comments.list(ctx.userId, id)))(),
+  );
+
+  server.tool(
+    "add_comment",
+    "Add a comment to a document (requires commenter access or above).",
+    { id: z.string(), body: z.string() },
+    ({ id, body }) =>
+      tool(ctx, "documents:write", async () => ok(await ctx.comments.add(ctx.userId, id, { body })))(),
+  );
+
   // Resource: browse/read documents by URI (brain://documents/{id}).
   server.resource(
     "documents",

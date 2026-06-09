@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
-import { accessService, documentService, sharingService, tagService } from "@/lib/services";
+import { accessService, commentService, documentService, sharingService, tagService } from "@/lib/services";
 import { BacklinksPanel } from "@/components/backlinks-panel";
 import { DocumentEditor } from "./document-editor";
 import { TagEditor } from "./tag-editor";
 import { ShareControls } from "./share-controls";
+import { CommentsPanel } from "./comments-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +21,10 @@ export default async function DocumentPage({
   if (!access?.canRead) notFound();
   const doc = await documentService().getByIdUnscoped(id);
   if (!doc) notFound();
-  const [backlinks, docTags] = await Promise.all([
+  const [backlinks, docTags, comments] = await Promise.all([
     documentService().backlinks(session.user.id, id),
     tagService().getDocumentTags(id),
+    commentService().list(session.user.id, id),
   ]);
   const [members, links] = access.canWrite
     ? await Promise.all([
@@ -40,6 +42,13 @@ export default async function DocumentPage({
       ) : null}
       <DocumentEditor id={doc.id} initialTitle={doc.title} initialContent={doc.content} readOnly={!access.canWrite} />
       <TagEditor documentId={doc.id} initialTags={docTags} canWrite={access.canWrite} />
+      <CommentsPanel
+        documentId={doc.id}
+        comments={comments}
+        currentUserId={session.user.id}
+        canComment={access.canComment}
+        canManage={access.canManage}
+      />
       <BacklinksPanel backlinks={backlinks} />
     </div>
   );

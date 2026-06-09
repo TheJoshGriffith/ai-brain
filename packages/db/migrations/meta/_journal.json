@@ -15,6 +15,13 @@
       "when": 1781100000000,
       "tag": "0001_spaces_and_sharing",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781200000000,
+      "tag": "0002_comments",
+      "breakpoints": true
     }
   ]
 }

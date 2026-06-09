@@ -1,5 +1,6 @@
 import { getDb } from "@ai-brain/db";
 import {
+  CommentService,
   DocumentService,
   LinkService,
   SearchService,
@@ -18,6 +19,7 @@ export interface McpContext {
   search: SearchService;
   spaces: SpaceService;
   tags: TagService;
+  comments: CommentService;
 }
 
 /** Resolves a PAT to a scoped context, or null if the token is invalid. */
@@ -34,6 +36,7 @@ export async function authenticate(token: string | undefined): Promise<McpContex
     search: new SearchService(db),
     spaces: new SpaceService(db),
     tags: new TagService(db),
+    comments: new CommentService(db),
   };
 }
 

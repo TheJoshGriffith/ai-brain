@@ -288,6 +288,27 @@ export const links = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// Comments — threads on a document. Commenters and above can post.
+// ---------------------------------------------------------------------------
+
+export const comments = pgTable(
+  "comments",
+  {
+    id: id(),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt,
+    updatedAt,
+  },
+  (t) => [index("comments_document_idx").on(t.documentId)],
+);
+
+// ---------------------------------------------------------------------------
 // Tags
 // ---------------------------------------------------------------------------
 
@@ -332,4 +353,5 @@ export type DocumentChunk = typeof documentChunks.$inferSelect;
 export type DocumentMember = typeof documentMembers.$inferSelect;
 export type DocumentShare = typeof documentShares.$inferSelect;
 export type Link = typeof links.$inferSelect;
+export type Comment = typeof comments.$inferSelect;
 export type Tag = typeof tags.$inferSelect;

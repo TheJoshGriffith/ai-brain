@@ -86,6 +86,7 @@ export {
   type ShareGrant,
   type CreateLinkInput,
 } from "./services/sharing.service";
+export { CommentService, type CommentView } from "./services/comment.service";
 export { IndexingService } from "./services/indexing.service";
 export { chunkContent } from "./search/chunk";
 export {
