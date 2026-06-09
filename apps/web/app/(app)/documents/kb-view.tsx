@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { File, Layers, Search } from "lucide-react";
+import { File, Layers, Search, Trash2 } from "lucide-react";
 import { createDocumentAction } from "./actions";
 
 export interface KbDoc {
@@ -53,6 +53,10 @@ export function KbView({
           <Layers />
           All documents
           <span className="count">{docs.length}</span>
+        </Link>
+        <Link href="/trash" className="tree-item">
+          <Trash2 />
+          Trash
         </Link>
 
         {spaceTags.length > 0 ? (

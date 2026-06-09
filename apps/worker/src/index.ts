@@ -1,13 +1,15 @@
 import "./env.js";
 import { getDb, type Job } from "@ai-brain/db";
-import { IndexingService, QueueService } from "@ai-brain/core";
+import { config, DocumentService, IndexingService, QueueService } from "@ai-brain/core";
 
 const POLL_MS = 1000;
 const BATCH = 5;
+const PURGE_INTERVAL_MS = 60 * 60 * 1000; // hourly trash retention sweep
 
 const db = getDb();
 const queue = new QueueService(db);
 const indexer = new IndexingService(db);
+const documents = new DocumentService(db);
 
 let running = true;
 
@@ -19,9 +21,14 @@ async function handle(job: Job): Promise<void> {
       break;
     }
     case "purge_trash":
-      // Retention purge is wired up in the version-history/trash unit.
+      await purge();
       break;
   }
+}
+
+async function purge(): Promise<void> {
+  const n = await documents.purgeExpiredTrash(config.trashRetentionDays);
+  if (n > 0) console.error(`[worker] purged ${n} document(s) past trash retention`);
 }
 
 async function tick(): Promise<number> {
@@ -40,6 +47,9 @@ async function tick(): Promise<number> {
 
 async function main() {
   console.error("ai-brain worker started");
+  await purge().catch((e) => console.error("[worker] initial purge failed:", e));
+  const purgeTimer = setInterval(() => void purge().catch(() => {}), PURGE_INTERVAL_MS);
+  purgeTimer.unref?.();
   while (running) {
     let processed = 0;
     try {

@@ -44,7 +44,7 @@ export class LinkService {
       const candidates = await tx
         .select({ id: documents.id, title: documents.title, slug: documents.slug })
         .from(documents)
-        .where(eq(documents.spaceId, doc.spaceId));
+        .where(and(eq(documents.spaceId, doc.spaceId), isNull(documents.deletedAt)));
 
       const bySlug = new Map(candidates.map((c) => [c.slug, c.id]));
       const byTitle = new Map(candidates.map((c) => [c.title.toLowerCase(), c.id]));
@@ -97,7 +97,7 @@ export class LinkService {
       })
       .from(links)
       .innerJoin(documents, eq(links.sourceDocumentId, documents.id))
-      .where(and(eq(links.targetDocumentId, documentId), eq(documents.spaceId, spaceId)));
+      .where(and(eq(links.targetDocumentId, documentId), eq(documents.spaceId, spaceId), isNull(documents.deletedAt)));
   }
 
   /** A document's outbound links (resolved and unresolved). */
@@ -121,6 +121,7 @@ export class LinkService {
       .where(
         and(
           eq(documents.spaceId, spaceId),
+          isNull(documents.deletedAt),
           sql`(${documents.slug} = ${slug} or lower(${documents.title}) = ${raw.toLowerCase()})`,
         ),
       )

@@ -70,6 +70,7 @@ export class SearchService {
           'MaxFragments=1,MaxWords=24,MinWords=8,StartSel=<<,StopSel=>>') as snippet
       from documents
       where space_id = ${spaceId}
+        and deleted_at is null
         and content_tsv @@ websearch_to_tsquery('english', ${query})
       order by ts_rank_cd(content_tsv, websearch_to_tsquery('english', ${query})) desc
       limit ${limit}
@@ -83,7 +84,7 @@ export class SearchService {
       select d.id as "documentId", d.title, d.slug, null as snippet
       from document_chunks c
       join documents d on d.id = c.document_id
-      where d.space_id = ${spaceId}
+      where d.space_id = ${spaceId} and d.deleted_at is null
       group by d.id, d.title, d.slug
       order by min(c.embedding <=> ${literal}::vector) asc
       limit ${limit}

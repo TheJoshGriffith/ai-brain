@@ -1,5 +1,11 @@
-import { and, desc, eq, like, ne } from "drizzle-orm";
-import { documents, type Database, type Document } from "@ai-brain/db";
+import { and, desc, eq, isNotNull, isNull, like, lt, ne } from "drizzle-orm";
+import {
+  documentVersions,
+  documents,
+  type Database,
+  type Document,
+  type DocumentVersion,
+} from "@ai-brain/db";
 import { z } from "zod";
 import { deriveTitle, parseMarkdown, slugify } from "../markdown/parse";
 import { AccessService } from "./access.service";
@@ -77,6 +83,7 @@ export class DocumentService {
 
     await this.linkService.syncOutboundLinks(doc);
     await this.linkService.resolveInboundLinks(doc);
+    await this.snapshotVersion(doc, userId);
     // Embedding happens asynchronously in the worker (keeps writes fast).
     await this.queue.enqueueReindex(doc.id);
     return doc;
@@ -90,7 +97,7 @@ export class DocumentService {
     return this.db
       .select(SUMMARY_COLUMNS)
       .from(documents)
-      .where(eq(documents.spaceId, spaceId))
+      .where(and(eq(documents.spaceId, spaceId), isNull(documents.deletedAt)))
       .orderBy(desc(documents.updatedAt))
       .limit(limit)
       .offset(offset);
@@ -104,9 +111,12 @@ export class DocumentService {
   }
 
   /** Reads a document without an access check — only for callers that have
-   *  already authorized access (e.g. a verified public share token). */
-  getByIdUnscoped(id: string): Promise<Document | undefined> {
-    return this.db.query.documents.findFirst({ where: eq(documents.id, id) });
+   *  already authorized access (e.g. a verified public share token). Excludes
+   *  trashed documents unless includeDeleted is set (trash/restore paths). */
+  getByIdUnscoped(id: string, includeDeleted = false): Promise<Document | undefined> {
+    return this.db.query.documents.findFirst({
+      where: includeDeleted ? eq(documents.id, id) : and(eq(documents.id, id), isNull(documents.deletedAt)),
+    });
   }
 
   async update(userId: string, id: string, input: UpdateDocumentInput): Promise<Document> {
@@ -143,6 +153,7 @@ export class DocumentService {
     if (doc.title !== existing.title || doc.slug !== existing.slug) {
       await this.linkService.resolveInboundLinks(doc);
     }
+    await this.snapshotVersion(doc, userId);
     if (contentChanged) await this.queue.enqueueReindex(doc.id);
     return doc;
   }
@@ -163,15 +174,132 @@ export class DocumentService {
     return this.linkService.backlinks(access.spaceId, documentId);
   }
 
+  /** Soft-delete: move a document to Trash. */
   async remove(userId: string, id: string): Promise<boolean> {
+    const access = await this.access.resolveDocumentAccess(userId, id);
+    if (!access) return false;
+    if (!access.canWrite) throw new DocumentForbiddenError();
+    const updated = await this.db
+      .update(documents)
+      .set({ deletedAt: new Date(), deletedBy: userId })
+      .where(and(eq(documents.id, id), isNull(documents.deletedAt)))
+      .returning({ id: documents.id });
+    return updated.length > 0;
+  }
+
+  /** Documents in a space's Trash (editor+ only). */
+  async listTrash(userId: string, spaceId: string): Promise<DocumentSummary[]> {
+    const role = await this.access.resolveSpaceRole(userId, spaceId);
+    if (!role) throw new DocumentForbiddenError();
+    return this.db
+      .select(SUMMARY_COLUMNS)
+      .from(documents)
+      .where(and(eq(documents.spaceId, spaceId), isNotNull(documents.deletedAt)))
+      .orderBy(desc(documents.deletedAt));
+  }
+
+  /** Restore a trashed document (re-slugging if its slug was reused). */
+  async restore(userId: string, id: string): Promise<Document> {
+    const access = await this.access.resolveDocumentAccess(userId, id);
+    if (!access) throw new DocumentNotFoundError();
+    if (!access.canWrite) throw new DocumentForbiddenError();
+    const doc = await this.getByIdUnscoped(id, true);
+    if (!doc?.deletedAt) throw new DocumentNotFoundError();
+
+    const slug = await this.ensureUniqueSlug(doc.spaceId, doc.slug, id);
+    const [restored] = await this.db
+      .update(documents)
+      .set({ deletedAt: null, deletedBy: null, slug })
+      .where(eq(documents.id, id))
+      .returning();
+    if (!restored) throw new DocumentNotFoundError();
+    await this.queue.enqueueReindex(id);
+    return restored;
+  }
+
+  /** Permanently delete a trashed document (cascades chunks/links/comments/versions). */
+  async purgePermanently(userId: string, id: string): Promise<boolean> {
     const access = await this.access.resolveDocumentAccess(userId, id);
     if (!access) return false;
     if (!access.canWrite) throw new DocumentForbiddenError();
     const deleted = await this.db
       .delete(documents)
-      .where(eq(documents.id, id))
+      .where(and(eq(documents.id, id), isNotNull(documents.deletedAt)))
       .returning({ id: documents.id });
     return deleted.length > 0;
+  }
+
+  /** Hard-delete documents trashed longer than `retentionDays`. Worker-only. */
+  async purgeExpiredTrash(retentionDays: number): Promise<number> {
+    const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+    const deleted = await this.db
+      .delete(documents)
+      .where(and(isNotNull(documents.deletedAt), lt(documents.deletedAt, cutoff)))
+      .returning({ id: documents.id });
+    return deleted.length;
+  }
+
+  // --- Version history -----------------------------------------------------
+
+  /** Snapshot the current saved state, coalescing rapid same-author edits. */
+  private async snapshotVersion(doc: Document, editorId: string): Promise<void> {
+    const COALESCE_MS = 2 * 60 * 1000;
+    const [latest] = await this.db
+      .select()
+      .from(documentVersions)
+      .where(eq(documentVersions.documentId, doc.id))
+      .orderBy(desc(documentVersions.version))
+      .limit(1);
+
+    const coalesce =
+      latest && latest.authorId === editorId && Date.now() - latest.createdAt.getTime() < COALESCE_MS;
+    if (coalesce) {
+      await this.db
+        .update(documentVersions)
+        .set({ title: doc.title, content: doc.content, frontmatter: doc.frontmatter, createdAt: new Date() })
+        .where(eq(documentVersions.id, latest.id));
+    } else {
+      await this.db.insert(documentVersions).values({
+        documentId: doc.id,
+        version: (latest?.version ?? 0) + 1,
+        title: doc.title,
+        content: doc.content,
+        frontmatter: doc.frontmatter,
+        authorId: editorId,
+      });
+    }
+  }
+
+  /** Version history (newest first), without content payloads. */
+  async listVersions(userId: string, id: string): Promise<Omit<DocumentVersion, "content" | "frontmatter">[]> {
+    const access = await this.access.resolveDocumentAccess(userId, id);
+    if (!access?.canRead) throw new DocumentForbiddenError();
+    return this.db
+      .select({
+        id: documentVersions.id,
+        documentId: documentVersions.documentId,
+        version: documentVersions.version,
+        title: documentVersions.title,
+        authorId: documentVersions.authorId,
+        createdAt: documentVersions.createdAt,
+      })
+      .from(documentVersions)
+      .where(eq(documentVersions.documentId, id))
+      .orderBy(desc(documentVersions.version));
+  }
+
+  /** Restore a document to a prior version (creates a new version). */
+  async restoreVersion(userId: string, id: string, version: number): Promise<Document> {
+    const access = await this.access.resolveDocumentAccess(userId, id);
+    if (!access) throw new DocumentNotFoundError();
+    if (!access.canWrite) throw new DocumentForbiddenError();
+    const [snapshot] = await this.db
+      .select()
+      .from(documentVersions)
+      .where(and(eq(documentVersions.documentId, id), eq(documentVersions.version, version)))
+      .limit(1);
+    if (!snapshot) throw new DocumentNotFoundError();
+    return this.update(userId, id, { title: snapshot.title, content: snapshot.content });
   }
 
   /** Appends -2, -3, … until the slug is unique within the space. */
@@ -182,6 +310,7 @@ export class DocumentService {
       .where(
         and(
           eq(documents.spaceId, spaceId),
+          isNull(documents.deletedAt),
           like(documents.slug, `${desired}%`),
           excludeId ? ne(documents.id, excludeId) : undefined,
         ),

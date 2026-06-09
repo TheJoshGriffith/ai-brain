@@ -6,7 +6,7 @@ import { DocumentEditor } from "./document-editor";
 import { TagEditor } from "./tag-editor";
 import { ShareControls } from "./share-controls";
 import { CommentsPanel } from "./comments-panel";
-import { reindexAction } from "../actions";
+import { reindexAction, restoreVersionAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +23,12 @@ export default async function DocumentPage({
   const doc = await documentService().getByIdUnscoped(id);
   if (!doc) notFound();
 
-  const [backlinks, docTags, comments, author] = await Promise.all([
+  const [backlinks, docTags, comments, author, versions] = await Promise.all([
     documentService().backlinks(session.user.id, id),
     tagService().getDocumentTags(id),
     commentService().list(session.user.id, id),
     authService().getUserById(doc.authorId),
+    documentService().listVersions(session.user.id, id),
   ]);
   const [members, links] = access.canWrite
     ? await Promise.all([
@@ -85,6 +86,34 @@ export default async function DocumentPage({
           <div className="meta-block">
             <h5>Share</h5>
             <ShareControls documentId={doc.id} members={members} links={links} />
+          </div>
+        ) : null}
+
+        {versions.length > 1 ? (
+          <div className="meta-block">
+            <h5>History</h5>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {versions.map((v, i) => (
+                <div key={v.id} className="meta-row">
+                  <span className="k" style={{ fontFamily: "var(--font-mono)", fontSize: 11.5 }}>
+                    v{v.version} · {new Date(v.createdAt).toLocaleDateString()}
+                  </span>
+                  <span className="v">
+                    {i === 0 ? (
+                      <span className="faint" style={{ fontSize: 11 }}>current</span>
+                    ) : access.canWrite ? (
+                      <form action={restoreVersionAction}>
+                        <input type="hidden" name="id" value={doc.id} />
+                        <input type="hidden" name="version" value={v.version} />
+                        <button type="submit" className="link-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11.5 }}>
+                          restore
+                        </button>
+                      </form>
+                    ) : null}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         ) : null}
 

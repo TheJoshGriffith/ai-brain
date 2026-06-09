@@ -54,3 +54,23 @@ export async function reindexAction(formData: FormData) {
   await documentService().requestReindex(userId, String(formData.get("id")));
   revalidatePath(`/documents/${String(formData.get("id"))}`);
 }
+
+export async function restoreVersionAction(formData: FormData) {
+  const userId = await requireUser();
+  const id = String(formData.get("id"));
+  await documentService().restoreVersion(userId, id, Number(formData.get("version")));
+  revalidatePath(`/documents/${id}`);
+}
+
+export async function restoreDocAction(formData: FormData) {
+  const userId = await requireUser();
+  const doc = await documentService().restore(userId, String(formData.get("id")));
+  revalidatePath("/trash");
+  redirect(`/documents/${doc.id}`);
+}
+
+export async function purgeDocAction(formData: FormData) {
+  const userId = await requireUser();
+  await documentService().purgePermanently(userId, String(formData.get("id")));
+  revalidatePath("/trash");
+}

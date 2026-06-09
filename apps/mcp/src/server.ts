@@ -126,6 +126,22 @@ export function buildMcpServer(ctx: McpContext): McpServer {
   );
 
   server.tool(
+    "list_versions",
+    "List a document's version history (newest first).",
+    { id: z.string() },
+    ({ id }) =>
+      tool(ctx, "documents:read", async () => ok(await ctx.documents.listVersions(ctx.userId, id)))(),
+  );
+
+  server.tool(
+    "restore_version",
+    "Restore a document to a prior version number (from list_versions). Creates a new version.",
+    { id: z.string(), version: z.number().int() },
+    ({ id, version }) =>
+      tool(ctx, "documents:write", async () => ok(await ctx.documents.restoreVersion(ctx.userId, id, version)))(),
+  );
+
+  server.tool(
     "list_links",
     "List the outgoing [[wiki links]] from a document, with their resolution status.",
     { id: z.string() },

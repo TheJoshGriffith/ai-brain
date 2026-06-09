@@ -185,15 +185,40 @@ export const documents = pgTable(
     // Embedding/index lifecycle — stamped by the background worker.
     indexStatus: text("index_status").$type<"pending" | "indexed" | "failed">().notNull().default("pending"),
     indexedAt: timestamp("indexed_at", { withTimezone: true }),
+    // Soft delete — moved to Trash, purged by the worker after retention.
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    deletedBy: text("deleted_by").references(() => users.id, { onDelete: "set null" }),
     createdAt,
     updatedAt,
   },
   (t) => [
-    uniqueIndex("documents_space_slug_idx").on(t.spaceId, t.slug),
+    // Slug is unique among *live* docs only, so trashed docs don't block reuse.
+    uniqueIndex("documents_space_slug_idx").on(t.spaceId, t.slug).where(sql`${t.deletedAt} is null`),
     index("documents_space_idx").on(t.spaceId),
     index("documents_author_idx").on(t.authorId),
     index("documents_content_tsv_idx").using("gin", t.contentTsv),
   ],
+);
+
+// ---------------------------------------------------------------------------
+// Document versions — full-content snapshots; rapid same-author edits coalesce.
+// ---------------------------------------------------------------------------
+
+export const documentVersions = pgTable(
+  "document_versions",
+  {
+    id: id(),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    frontmatter: jsonb("frontmatter").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    authorId: text("author_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt,
+  },
+  (t) => [uniqueIndex("document_versions_doc_version_idx").on(t.documentId, t.version)],
 );
 
 // ---------------------------------------------------------------------------
@@ -380,3 +405,4 @@ export type Link = typeof links.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type Tag = typeof tags.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
+export type DocumentVersion = typeof documentVersions.$inferSelect;

@@ -24,4 +24,7 @@ export const config = {
   get openaiApiKey(): string | undefined {
     return process.env.OPENAI_API_KEY || undefined;
   },
+  get trashRetentionDays(): number {
+    return Number(process.env.TRASH_RETENTION_DAYS ?? 30);
+  },
 };
