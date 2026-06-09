@@ -219,12 +219,13 @@ body {
 .filter-input svg { width: 15px; height: 15px; color: var(--fg-faint); flex-shrink: 0; }
 .filter-input input { border: none; background: none; outline: none; color: var(--fg); font: inherit; width: 100%; }
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--panel); }
-.seg button {
+.seg button, .seg a {
   border: none; background: none; padding: 0 11px; height: 30px; font: inherit; font-size: 12.5px;
   color: var(--fg-muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  text-decoration: none;
 }
-.seg button + button { border-left: 1px solid var(--border); }
-.seg button[data-on="true"] { background: var(--panel-3); color: var(--fg); }
+.seg button + button, .seg a + a, .seg button + a, .seg a + button { border-left: 1px solid var(--border); }
+.seg button[data-on="true"], .seg a[data-on="true"] { background: var(--panel-3); color: var(--fg); }
 
 /* Table */
 .tbl { width: 100%; border-collapse: separate; border-spacing: 0; }

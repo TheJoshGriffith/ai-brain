@@ -6,21 +6,31 @@ import { KbView, type KbDoc } from "./kb-view";
 
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 50;
+
 export default async function DocumentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tag?: string }>;
+  searchParams: Promise<{ tag?: string; page?: string; sort?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) return null;
   const { current } = await getSpacesAndCurrent(session.user.id);
-  const { tag } = await searchParams;
+  const { tag, page: pageParam, sort: sortParam } = await searchParams;
 
-  const [docs, spaceTags] = await Promise.all([
+  const page = Math.max(1, Number(pageParam) || 1);
+  const sort = sortParam === "title" ? "title" : "updated";
+  const offset = (page - 1) * PAGE_SIZE;
+  const userId = session.user.id;
+
+  const [docs, total, spaceTags] = await Promise.all([
     tag
-      ? tagService().listDocumentsByTag(session.user.id, current.id, tag)
-      : documentService().list(session.user.id, current.id),
-    tagService().listForSpace(session.user.id, current.id),
+      ? tagService().listDocumentsByTag(userId, current.id, tag, { limit: PAGE_SIZE, offset, sort })
+      : documentService().list(userId, current.id, { limit: PAGE_SIZE, offset, sort }),
+    tag
+      ? tagService().countDocumentsByTag(userId, current.id, tag)
+      : documentService().count(userId, current.id),
+    tagService().listForSpace(userId, current.id),
   ]);
   const tagMap = await tagService().tagsByDocuments(docs.map((d) => d.id));
 
@@ -41,6 +51,10 @@ export default async function DocumentsPage({
       spaceName={current.name}
       spaceId={current.id}
       mayWrite={canWrite(current.role)}
+      page={page}
+      pageSize={PAGE_SIZE}
+      total={total}
+      sort={sort}
     />
   );
 }

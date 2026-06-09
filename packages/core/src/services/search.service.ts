@@ -40,12 +40,14 @@ export class SearchService {
     userId: string,
     spaceId: string,
     query: string,
-    opts: { limit?: number } = {},
+    opts: { limit?: number; offset?: number } = {},
   ): Promise<SearchResult[]> {
     if (!(await this.access.resolveSpaceRole(userId, spaceId))) return [];
     const limit = Math.min(Math.max(opts.limit ?? 10, 1), 50);
-    const pool = limit * 3;
+    const offset = Math.max(opts.offset ?? 0, 0);
     if (!query.trim()) return [];
+    // Retrieve a deep enough pool to fuse + paginate.
+    const pool = Math.min((offset + limit) * 3, 300);
 
     const fts = await this.fullTextSearch(spaceId, query, pool);
 
@@ -57,7 +59,7 @@ export class SearchService {
       console.warn("[search] semantic search unavailable, using full-text only:", error);
     }
 
-    return this.fuse(fts, semantic, limit);
+    return this.fuse(fts, semantic, offset + limit).slice(offset);
   }
 
   private async fullTextSearch(spaceId: string, query: string, limit: number): Promise<Ranked[]> {

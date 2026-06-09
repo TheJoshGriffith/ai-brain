@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   documentTags,
   documents,
@@ -83,8 +83,16 @@ export class TagService {
   }
 
   /** Documents in a space carrying a given tag (requires membership). */
-  async listDocumentsByTag(userId: string, spaceId: string, name: string): Promise<DocumentSummary[]> {
+  async listDocumentsByTag(
+    userId: string,
+    spaceId: string,
+    name: string,
+    opts: { limit?: number; offset?: number; sort?: "updated" | "title" } = {},
+  ): Promise<DocumentSummary[]> {
     if (!(await this.access.resolveSpaceRole(userId, spaceId))) throw new DocumentForbiddenError();
+    const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
+    const offset = Math.max(opts.offset ?? 0, 0);
+    const order = opts.sort === "title" ? asc(documents.title) : desc(documents.updatedAt);
     return this.db
       .select({
         id: documents.id,
@@ -97,7 +105,21 @@ export class TagService {
       .from(documentTags)
       .innerJoin(tags, eq(tags.id, documentTags.tagId))
       .innerJoin(documents, eq(documents.id, documentTags.documentId))
-      .where(and(eq(tags.spaceId, spaceId), eq(tags.name, normalizeTag(name))))
-      .orderBy(desc(documents.updatedAt));
+      .where(and(eq(tags.spaceId, spaceId), eq(tags.name, normalizeTag(name)), isNull(documents.deletedAt)))
+      .orderBy(order)
+      .limit(limit)
+      .offset(offset);
+  }
+
+  /** Count of documents carrying a tag (for pagination). */
+  async countDocumentsByTag(userId: string, spaceId: string, name: string): Promise<number> {
+    if (!(await this.access.resolveSpaceRole(userId, spaceId))) throw new DocumentForbiddenError();
+    const [row] = await this.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(documentTags)
+      .innerJoin(tags, eq(tags.id, documentTags.tagId))
+      .innerJoin(documents, eq(documents.id, documentTags.documentId))
+      .where(and(eq(tags.spaceId, spaceId), eq(tags.name, normalizeTag(name)), isNull(documents.deletedAt)));
+    return row?.n ?? 0;
   }
 }

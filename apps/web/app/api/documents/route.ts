@@ -18,8 +18,11 @@ export async function GET(req: Request) {
   const limit = Number(url.searchParams.get("limit") ?? "50");
   const offset = Number(url.searchParams.get("offset") ?? "0");
   try {
-    const docs = await documentService().list(principal.userId, spaceId, { limit, offset });
-    return NextResponse.json({ documents: docs });
+    const [docs, total] = await Promise.all([
+      documentService().list(principal.userId, spaceId, { limit, offset }),
+      documentService().count(principal.userId, spaceId),
+    ]);
+    return NextResponse.json({ documents: docs, total, limit, offset });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

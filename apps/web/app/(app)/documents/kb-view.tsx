@@ -28,6 +28,10 @@ export function KbView({
   spaceName,
   spaceId,
   mayWrite,
+  page,
+  pageSize,
+  total,
+  sort,
 }: {
   docs: KbDoc[];
   spaceTags: { id: string; name: string }[];
@@ -35,18 +39,28 @@ export function KbView({
   spaceName: string;
   spaceId: string;
   mayWrite: boolean;
+  page: number;
+  pageSize: number;
+  total: number;
+  sort: "updated" | "title";
 }) {
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<"updated" | "az">("updated");
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = q ? docs.filter((d) => d.title.toLowerCase().includes(q)) : docs;
-    const sorted = [...filtered].sort((a, b) =>
-      sort === "az" ? a.title.localeCompare(b.title) : +new Date(b.updatedAt) - +new Date(a.updatedAt),
-    );
-    return sorted;
-  }, [docs, query, sort]);
+    return q ? docs.filter((d) => d.title.toLowerCase().includes(q)) : docs;
+  }, [docs, query]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const firstShown = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const lastShown = Math.min(page * pageSize, total);
+  const href = (params: Record<string, string | number | undefined>) => {
+    const sp = new URLSearchParams();
+    if (activeTag) sp.set("tag", activeTag);
+    for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") sp.set(k, String(v));
+    const s = sp.toString();
+    return `/documents${s ? `?${s}` : ""}`;
+  };
 
   return (
     <div className="kb-grid">
@@ -55,7 +69,7 @@ export function KbView({
         <Link href="/documents" className="tree-item" data-active={!activeTag}>
           <Layers />
           All documents
-          <span className="count">{docs.length}</span>
+          <span className="count">{!activeTag ? total : ""}</span>
         </Link>
         <Link href="/trash" className="tree-item">
           <Trash2 />
@@ -82,7 +96,7 @@ export function KbView({
             <div>
               <h1 className="page-title">{spaceName}</h1>
               <p className="page-sub">
-                {docs.length} document{docs.length === 1 ? "" : "s"} · indexed for MCP retrieval
+                {total} document{total === 1 ? "" : "s"} · indexed for MCP retrieval
                 {activeTag ? ` · filtered by #${activeTag}` : ""}
               </p>
             </div>
@@ -99,19 +113,19 @@ export function KbView({
           <div className="toolbar">
             <div className="filter-input">
               <Search />
-              <input placeholder="Filter documents…" value={query} onChange={(e) => setQuery(e.target.value)} />
+              <input placeholder="Filter this page…" value={query} onChange={(e) => setQuery(e.target.value)} />
             </div>
             <div className="seg">
-              <button data-on={sort === "updated"} onClick={() => setSort("updated")}>Updated</button>
-              <button data-on={sort === "az"} onClick={() => setSort("az")}>A–Z</button>
+              <Link href={href({ sort: "updated" })} data-on={sort === "updated"}>Updated</Link>
+              <Link href={href({ sort: "title" })} data-on={sort === "title"}>A–Z</Link>
             </div>
           </div>
 
           {rows.length === 0 ? (
             <div className="empty">
               <Search />
-              <h3>No documents match</h3>
-              <p className="hint">Try a different filter, or create a document.</p>
+              <h3>{total === 0 ? "No documents yet" : "Nothing on this page matches"}</h3>
+              <p className="hint">Create a document, or have Claude/Codex write to your brain over the API.</p>
             </div>
           ) : (
             <table className="tbl">
@@ -147,6 +161,17 @@ export function KbView({
               </tbody>
             </table>
           )}
+
+          {total > pageSize ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
+              <span className="hint">{firstShown}–{lastShown} of {total}</span>
+              <div style={{ display: "flex", gap: 8 }}>
+                {page > 1 ? <Link href={href({ sort, page: page - 1 })} className="btn btn-sm">Previous</Link> : <span className="btn btn-sm" style={{ opacity: 0.4, pointerEvents: "none" }}>Previous</span>}
+                <span className="hint" style={{ alignSelf: "center" }}>Page {page} / {totalPages}</span>
+                {page < totalPages ? <Link href={href({ sort, page: page + 1 })} className="btn btn-sm">Next</Link> : <span className="btn btn-sm" style={{ opacity: 0.4, pointerEvents: "none" }}>Next</span>}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
