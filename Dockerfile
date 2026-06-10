@@ -16,6 +16,17 @@ RUN DATABASE_URL=postgres://placeholder AUTH_SECRET=placeholder pnpm --filter @a
 
 ENV NODE_ENV=production
 ENV MODEL_CACHE_DIR=/app/.models
+
+# Run unprivileged. uid 99 / gid 100 == Unraid's nobody:users, so bind-mounted
+# appdata dirs (which setup-unraid.sh already chowns to 99:100) stay writable
+# without any re-chowning. Only the paths written at runtime need ownership:
+# the model cache and Next's runtime cache. node_modules stays root-owned (RO).
+RUN (useradd -u 99 -g 100 -m -d /home/app -s /usr/sbin/nologin app 2>/dev/null || true) \
+ && mkdir -p /home/app /app/.models \
+ && chown -R 99:100 /home/app /app/.models /app/apps/web/.next
+ENV HOME=/home/app
+USER 99:100
+
 EXPOSE 3002 8787
 
 # Default command (overridden per service in docker-compose).

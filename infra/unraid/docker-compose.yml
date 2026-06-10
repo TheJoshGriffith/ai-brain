@@ -12,28 +12,50 @@ name: ai-brain
 #   /mnt/user/appdata/ai-brain/ai-brain.env
 # which the setup script generates. Edit AUTH_URL there to match how you browse.
 #
+# REVERSE PROXY: app ports bind to 127.0.0.1 so the app is NOT reachable
+# directly — only through your TLS-terminating nginx. Two models:
+#   • nginx on the host  → keep the 127.0.0.1 binds; proxy_pass to 127.0.0.1:3002.
+#   • nginx in a container (SWAG / NPM) → REMOVE the `ports:` blocks entirely and
+#     attach that proxy to this stack's network (`ai-brain_default`), then
+#     proxy_pass http://web:3002 / http://mcp:8787 by service name.
+# Either way, only nginx's 443 should be exposed to the network.
+#
 # Pin a release by changing ":master" to a tag like ":v1.0.0" once you cut one.
 # Paths below assume the default appdata location; change them all together if
 # you set a custom APPDATA in the setup script.
 # ---------------------------------------------------------------------------
 
 x-image: &image ghcr.io/thejoshgriffith/ai-brain:master
-x-env: &env-file
+
+# Shared config for the app services: GHCR image, env file, and a tight security
+# profile (no privilege escalation, no Linux capabilities — the Node services
+# need none, and the image already runs as a non-root user).
+x-app: &app
+  image: *image
+  restart: unless-stopped
   env_file:
     - /mnt/user/appdata/ai-brain/ai-brain.env
+  security_opt:
+    - "no-new-privileges:true"
+  cap_drop:
+    - ALL
 
 services:
   db:
     image: pgvector/pgvector:pg16
     container_name: ai-brain-db
     restart: unless-stopped
-    <<: *env-file
+    # Postgres' entrypoint drops privileges via gosu, so it keeps default caps.
+    security_opt:
+      - "no-new-privileges:true"
+    env_file:
+      - /mnt/user/appdata/ai-brain/ai-brain.env
     volumes:
       - /mnt/user/appdata/ai-brain/postgres:/var/lib/postgresql/data
     # pgvector is enabled by the first DB migration — no init script needed.
     # Uncomment to reach Postgres from the LAN (e.g. a DB GUI). Not required.
     # ports:
-    #   - "5433:5432"
+    #   - "127.0.0.1:5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ai_brain -d ai_brain"]
       interval: 10s
@@ -42,22 +64,20 @@ services:
 
   # One-shot: apply DB migrations, then exit. App services wait for success.
   migrate:
-    image: *image
+    <<: *app
     container_name: ai-brain-migrate
     command: ["pnpm", "--filter", "@ai-brain/db", "db:migrate"]
-    <<: *env-file
+    restart: "no"
     depends_on:
       db:
         condition: service_healthy
-    restart: "no"
 
   web:
-    image: *image
+    <<: *app
     container_name: ai-brain-web
     command: ["pnpm", "--filter", "@ai-brain/web", "start"]
-    <<: *env-file
     ports:
-      - "3002:3002"
+      - "127.0.0.1:3002:3002"
     volumes:
       - /mnt/user/appdata/ai-brain/models:/app/.models
     depends_on:
@@ -71,17 +91,15 @@ services:
       timeout: 5s
       retries: 12
       start_period: 60s
-    restart: unless-stopped
     labels:
       net.unraid.docker.webui: "http://[IP]:[PORT:3002]/"
 
   mcp:
-    image: *image
+    <<: *app
     container_name: ai-brain-mcp
     command: ["pnpm", "--filter", "@ai-brain/mcp", "start:http"]
-    <<: *env-file
     ports:
-      - "8787:8787"
+      - "127.0.0.1:8787:8787"
     volumes:
       - /mnt/user/appdata/ai-brain/models:/app/.models
     depends_on:
@@ -89,13 +107,11 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    restart: unless-stopped
 
   worker:
-    image: *image
+    <<: *app
     container_name: ai-brain-worker
     command: ["pnpm", "--filter", "@ai-brain/worker", "start"]
-    <<: *env-file
     volumes:
       - /mnt/user/appdata/ai-brain/models:/app/.models
     depends_on:
@@ -103,4 +119,3 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    restart: unless-stopped

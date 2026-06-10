@@ -17,7 +17,11 @@ export async function registerAction(
   const name = String(formData.get("name") ?? "").trim();
   const inviteToken = String(formData.get("inviteToken") ?? "") || undefined;
 
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  // Trust only the rightmost X-Forwarded-For hop — the one appended by our own
+  // reverse proxy. Earlier entries are client-supplied and trivially spoofable,
+  // so keying the limiter on [0] would let an attacker rotate fake IPs.
+  // (Assumes a single trusted proxy in front of the app.)
+  const ip = (await headers()).get("x-forwarded-for")?.split(",").pop()?.trim() || "local";
   if (!signupLimiter.consume(ip)) {
     return { error: "Too many sign-ups from this network. Please try again later." };
   }
