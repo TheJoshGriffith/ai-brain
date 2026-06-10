@@ -40,6 +40,15 @@ export function buildMcpServer(ctx: McpContext): McpServer {
   );
 
   server.tool(
+    "create_space",
+    "Create a new space (workspace) owned by the user. Returns the new space including its id, which you can pass to create_document and other tools.",
+    {
+      name: z.string().min(1).max(120).describe("Display name for the new space"),
+    },
+    ({ name }) => tool(ctx, "spaces:write", async () => ok(await ctx.spaces.create(ctx.userId, { name })))(),
+  );
+
+  server.tool(
     "search_documents",
     "Hybrid full-text + semantic search within a space. Use this first to find relevant notes by keyword or meaning.",
     {
