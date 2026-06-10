@@ -9,6 +9,7 @@ const SCOPES: { value: TokenScope; label: string }[] = [
   { value: "documents:read", label: "Read documents" },
   { value: "documents:write", label: "Write documents" },
   { value: "documents:delete", label: "Delete documents (trash)" },
+  { value: "documents:purge", label: "Purge trash (permanent)" },
   { value: "search:read", label: "Search" },
   { value: "spaces:read", label: "Read spaces" },
   { value: "spaces:write", label: "Manage spaces & members" },

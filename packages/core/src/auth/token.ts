@@ -7,6 +7,7 @@ export const TOKEN_SCOPES = [
   "documents:read",
   "documents:write",
   "documents:delete",
+  "documents:purge",
   "search:read",
   "spaces:read",
   "spaces:write",

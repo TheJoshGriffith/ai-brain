@@ -116,6 +116,33 @@ export function buildMcpServer(ctx: McpContext): McpServer {
   );
 
   server.tool(
+    "list_trash",
+    "List soft-deleted documents in a space that can still be restored or purged.",
+    { space_id: z.string().describe("The space whose trash to list (from list_spaces)") },
+    ({ space_id }) =>
+      tool(ctx, "documents:read", async () => ok(await ctx.documents.listTrash(ctx.userId, space_id)))(),
+  );
+
+  server.tool(
+    "restore_document",
+    "Restore a soft-deleted document (from list_trash) back into its space.",
+    { id: z.string() },
+    ({ id }) =>
+      tool(ctx, "documents:write", async () => ok(await ctx.documents.restore(ctx.userId, id)))(),
+  );
+
+  server.tool(
+    "purge_document",
+    "Permanently delete a trashed document and all its data (chunks, links, versions, comments). This cannot be undone.",
+    { id: z.string() },
+    ({ id }) =>
+      tool(ctx, "documents:purge", async () => {
+        const purged = await ctx.documents.purgePermanently(ctx.userId, id);
+        return purged ? ok({ purged: true, id }) : fail("Document not found in trash");
+      })(),
+  );
+
+  server.tool(
     "get_backlinks",
     "List documents that link TO the given document (incoming references).",
     { id: z.string() },

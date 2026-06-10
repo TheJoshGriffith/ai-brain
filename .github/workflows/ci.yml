@@ -74,3 +74,4 @@ jobs:
           set -e
           pnpm --filter @ai-brain/mcp exec node --import tsx scripts/verify-create-space.mts ci
           pnpm --filter @ai-brain/mcp exec node --import tsx scripts/verify-delete-scope.mts ci
+          pnpm --filter @ai-brain/mcp exec node --import tsx scripts/verify-trash-scope.mts ci
