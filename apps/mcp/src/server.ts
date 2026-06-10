@@ -106,10 +106,10 @@ export function buildMcpServer(ctx: McpContext): McpServer {
 
   server.tool(
     "delete_document",
-    "Permanently delete a document by id.",
+    "Move a document to the trash (soft delete; restorable from the web UI within the retention window).",
     { id: z.string() },
     ({ id }) =>
-      tool(ctx, "documents:write", async () => {
+      tool(ctx, "documents:delete", async () => {
         const deleted = await ctx.documents.remove(ctx.userId, id);
         return deleted ? ok({ deleted: true, id }) : fail("Document not found");
       })(),

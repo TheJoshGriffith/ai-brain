@@ -70,4 +70,7 @@ jobs:
             echo "::endgroup::"
           done
       - name: Verify MCP tools
-        run: pnpm --filter @ai-brain/mcp exec node --import tsx scripts/verify-create-space.mts ci
+        run: |
+          set -e
+          pnpm --filter @ai-brain/mcp exec node --import tsx scripts/verify-create-space.mts ci
+          pnpm --filter @ai-brain/mcp exec node --import tsx scripts/verify-delete-scope.mts ci

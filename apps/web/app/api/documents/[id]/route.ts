@@ -51,7 +51,7 @@ export async function PATCH(req: Request, { params }: Params) {
 export async function DELETE(req: Request, { params }: Params) {
   const principal = await authenticateRequest(req);
   if (!principal) return unauthorized();
-  if (!hasScope(principal, "documents:write")) return forbidden("documents:write");
+  if (!hasScope(principal, "documents:delete")) return forbidden("documents:delete");
 
   const { id } = await params;
   try {

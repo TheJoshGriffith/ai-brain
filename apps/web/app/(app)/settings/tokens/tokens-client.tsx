@@ -8,6 +8,7 @@ import { createTokenAction, revokeTokenAction, type CreateTokenState } from "./a
 const SCOPES: { value: TokenScope; label: string }[] = [
   { value: "documents:read", label: "Read documents" },
   { value: "documents:write", label: "Write documents" },
+  { value: "documents:delete", label: "Delete documents (trash)" },
   { value: "search:read", label: "Search" },
   { value: "spaces:read", label: "Read spaces" },
   { value: "spaces:write", label: "Manage spaces & members" },

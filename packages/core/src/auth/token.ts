@@ -6,6 +6,7 @@ export const TOKEN_PREFIX = "aib";
 export const TOKEN_SCOPES = [
   "documents:read",
   "documents:write",
+  "documents:delete",
   "search:read",
   "spaces:read",
   "spaces:write",
