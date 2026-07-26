@@ -57,6 +57,9 @@ importers:
       '@xenova/transformers':
         specifier: ^2.17.2
         version: 2.17.2
+      ai-brain-tibiamap-plugin:
+        specifier: github:TheJoshGriffith/ai-brain-tibiamap-plugin
+        version: https://codeload.github.com/TheJoshGriffith/ai-brain-tibiamap-plugin/tar.gz/c2156ec3ddbcf374fef4661b87f6046d5e3e54c8(react@19.2.7)
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
@@ -1467,6 +1470,15 @@ packages:
     resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
+
+  ai-brain-tibiamap-plugin@https://codeload.github.com/TheJoshGriffith/ai-brain-tibiamap-plugin/tar.gz/c2156ec3ddbcf374fef4661b87f6046d5e3e54c8:
+    resolution: {tarball: https://codeload.github.com/TheJoshGriffith/ai-brain-tibiamap-plugin/tar.gz/c2156ec3ddbcf374fef4661b87f6046d5e3e54c8}
+    version: 0.1.0
+    peerDependencies:
+      react: '>=18'
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -4608,6 +4620,10 @@ snapshots:
       acorn: 8.16.0
 
   acorn@8.16.0: {}
+
+  ai-brain-tibiamap-plugin@https://codeload.github.com/TheJoshGriffith/ai-brain-tibiamap-plugin/tar.gz/c2156ec3ddbcf374fef4661b87f6046d5e3e54c8(react@19.2.7):
+    optionalDependencies:
+      react: 19.2.7
 
   ajv-formats@3.0.1(ajv@8.20.0):
     optionalDependencies:

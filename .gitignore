@@ -38,3 +38,6 @@ AI-Brain.zip
 data/tibiawiki/*.db
 data/tibiawiki/*.jsonl
 data/tibiawiki/*.progress
+data/tibiawiki/*.db-wal
+data/tibiawiki/*.db-shm
+data/tibiawiki/.fuse_hidden*
