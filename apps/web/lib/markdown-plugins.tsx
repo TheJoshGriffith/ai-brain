@@ -15,6 +15,11 @@ export interface FencePlugin {
   language: string;
   /** Receives the raw fence body. */
   Component: ComponentType<{ code: string }>;
+  /** Optional link handler: claims matching hrefs anywhere in the document. */
+  link?: {
+    match: (href: string) => boolean;
+    Component: ComponentType<{ href: string; children?: React.ReactNode }>;
+  };
 }
 
 export const fencePlugins: FencePlugin[] = [tibiaMapPlugin];
@@ -22,4 +27,9 @@ export const fencePlugins: FencePlugin[] = [tibiaMapPlugin];
 export function fencePluginFor(language: string | undefined): FencePlugin | undefined {
   if (!language) return undefined;
   return fencePlugins.find((p) => p.language === language);
+}
+
+export function linkPluginFor(href: string | undefined): FencePlugin["link"] | undefined {
+  if (!href) return undefined;
+  return fencePlugins.find((p) => p.link?.match(href))?.link;
 }

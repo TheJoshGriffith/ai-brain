@@ -2,7 +2,7 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { fencePluginFor } from "@/lib/markdown-plugins";
+import { fencePluginFor, linkPluginFor } from "@/lib/markdown-plugins";
 
 /** Rewrites `[[target|alias]]` into Markdown links to the resolver route. */
 function rewriteWikiLinks(md: string): string {
@@ -32,10 +32,23 @@ function Code({ className, children, ...props }: React.HTMLAttributes<HTMLElemen
   );
 }
 
+/** Anchor renderer that routes registered hrefs (e.g. tibiamaps.io positions) to their plugin. */
+function Anchor({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+  const plugin = linkPluginFor(href);
+  if (plugin) {
+    return <plugin.Component href={href!}>{children}</plugin.Component>;
+  }
+  return (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  );
+}
+
 export function MarkdownPreview({ content }: { content: string }) {
   return (
     <div className="md">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ code: Code }}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ code: Code, a: Anchor }}>
         {rewriteWikiLinks(content)}
       </ReactMarkdown>
     </div>

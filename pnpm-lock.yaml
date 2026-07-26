@@ -59,7 +59,7 @@ importers:
         version: 2.17.2
       ai-brain-tibiamap-plugin:
         specifier: github:TheJoshGriffith/ai-brain-tibiamap-plugin
-        version: https://codeload.github.com/TheJoshGriffith/ai-brain-tibiamap-plugin/tar.gz/c2156ec3ddbcf374fef4661b87f6046d5e3e54c8(react@19.2.7)
+        version: https://codeload.github.com/TheJoshGriffith/ai-brain-tibiamap-plugin/tar.gz/f13cc06c7a87f48f174da69f97eedd3b9da1440c(react@19.2.7)
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
@@ -1471,8 +1471,8 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  ai-brain-tibiamap-plugin@https://codeload.github.com/TheJoshGriffith/ai-brain-tibiamap-plugin/tar.gz/c2156ec3ddbcf374fef4661b87f6046d5e3e54c8:
-    resolution: {tarball: https://codeload.github.com/TheJoshGriffith/ai-brain-tibiamap-plugin/tar.gz/c2156ec3ddbcf374fef4661b87f6046d5e3e54c8}
+  ai-brain-tibiamap-plugin@https://codeload.github.com/TheJoshGriffith/ai-brain-tibiamap-plugin/tar.gz/f13cc06c7a87f48f174da69f97eedd3b9da1440c:
+    resolution: {tarball: https://codeload.github.com/TheJoshGriffith/ai-brain-tibiamap-plugin/tar.gz/f13cc06c7a87f48f174da69f97eedd3b9da1440c}
     version: 0.1.0
     peerDependencies:
       react: '>=18'
@@ -4621,7 +4621,7 @@ snapshots:
 
   acorn@8.16.0: {}
 
-  ai-brain-tibiamap-plugin@https://codeload.github.com/TheJoshGriffith/ai-brain-tibiamap-plugin/tar.gz/c2156ec3ddbcf374fef4661b87f6046d5e3e54c8(react@19.2.7):
+  ai-brain-tibiamap-plugin@https://codeload.github.com/TheJoshGriffith/ai-brain-tibiamap-plugin/tar.gz/f13cc06c7a87f48f174da69f97eedd3b9da1440c(react@19.2.7):
     optionalDependencies:
       react: 19.2.7
 

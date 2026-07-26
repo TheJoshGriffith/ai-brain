@@ -1,6 +1,13 @@
 declare module "ai-brain-tibiamap-plugin" {
-  import type { ComponentType } from "react";
-  const plugin: { language: string; Component: ComponentType<{ code: string }> };
+  import type { ComponentType, ReactNode } from "react";
+  const plugin: {
+    language: string;
+    Component: ComponentType<{ code: string }>;
+    link?: {
+      match: (href: string) => boolean;
+      Component: ComponentType<{ href: string; children?: ReactNode }>;
+    };
+  };
   export default plugin;
 }
 
