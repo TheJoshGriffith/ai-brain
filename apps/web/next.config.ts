@@ -13,7 +13,8 @@ const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // tibiamaps.github.io: map tiles for the tibiamap markdown plugin.
+  "img-src 'self' data: blob: https://tibiamaps.github.io",
   "font-src 'self' data:",
   "connect-src 'self'",
   "frame-ancestors 'none'",
@@ -36,7 +37,7 @@ const nextConfig: NextConfig = {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
   // Workspace packages are shipped as TypeScript source and transpiled by Next.
-  transpilePackages: ["@ai-brain/core", "@ai-brain/db"],
+  transpilePackages: ["@ai-brain/core", "@ai-brain/db", "ai-brain-tibiamap-plugin"],
   // Keep native/node-only deps out of the bundle (required at runtime instead).
   serverExternalPackages: [
     "pg",
