@@ -4,6 +4,14 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { fencePluginFor, linkPluginFor } from "@/lib/markdown-plugins";
 
+/**
+ * Strips a leading YAML frontmatter block. The frontmatter is structured data
+ * (parsed into `documents.frontmatter` on save) — not part of the readable body.
+ */
+function stripFrontmatter(md: string): string {
+  return md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
+}
+
 /** Rewrites `[[target|alias]]` into Markdown links to the resolver route. */
 function rewriteWikiLinks(md: string): string {
   return md.replace(/\[\[([^\]\n]+?)\]\]/g, (whole, inner: string) => {
@@ -49,7 +57,7 @@ export function MarkdownPreview({ content }: { content: string }) {
   return (
     <div className="md">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ code: Code, a: Anchor }}>
-        {rewriteWikiLinks(content)}
+        {rewriteWikiLinks(stripFrontmatter(content))}
       </ReactMarkdown>
     </div>
   );

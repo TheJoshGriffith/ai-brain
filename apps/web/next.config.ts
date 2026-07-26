@@ -14,7 +14,9 @@ const csp = [
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   // tibiamaps.github.io: map tiles for the tibiamap markdown plugin.
-  "img-src 'self' data: blob: https://tibiamaps.github.io",
+  // tibia.fandom.com + static.wikia.nocookie.net: TibiaWiki images via
+  // Special:FilePath (302s to the wikia CDN; CSP checks every hop).
+  "img-src 'self' data: blob: https://tibiamaps.github.io https://tibia.fandom.com https://static.wikia.nocookie.net",
   "font-src 'self' data:",
   "connect-src 'self'",
   "frame-ancestors 'none'",
