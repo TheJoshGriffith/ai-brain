@@ -32,7 +32,7 @@ export function DocumentEditor({
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [status, setStatus] = useState<Status>("saved");
-  const [mode, setMode] = useState<Mode>(readOnly ? "preview" : "edit");
+  const [mode, setMode] = useState<Mode>("preview");
   const [conflict, setConflict] = useState(false);
   const [, startTransition] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
