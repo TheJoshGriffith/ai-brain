@@ -5,6 +5,9 @@ FROM node:20-bookworm-slim AS app
 
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
+# git: required for pnpm to fetch github:-hosted dependencies (tibiamap plugin).
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 
 WORKDIR /app
