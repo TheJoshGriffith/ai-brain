@@ -26,11 +26,11 @@ function parseGallery(code: string): Slide[] {
     if (!line || line.startsWith("#")) continue;
     const baseMatch = line.match(/^base:\s*(\S+)$/);
     if (baseMatch) {
-      base = baseMatch[1];
+      base = baseMatch[1] ?? "";
       continue;
     }
     const [file, ...rest] = line.split("|");
-    const name = file.trim();
+    const name = (file ?? "").trim();
     if (!name) continue;
     const src = /^https?:\/\//.test(name) ? name : base + encodeURIComponent(name.replace(/ /g, "_"));
     const caption = rest.join("|").trim() || undefined;
@@ -42,8 +42,8 @@ function parseGallery(code: string): Slide[] {
 function GalleryBlock({ code }: { code: string }) {
   const slides = parseGallery(code);
   const [index, setIndex] = useState(0);
-  if (slides.length === 0) return null;
   const slide = slides[Math.min(index, slides.length - 1)];
+  if (!slide) return null;
 
   return (
     <figure className="gallery-block" style={{ margin: "1rem 0", textAlign: "center" }}>
