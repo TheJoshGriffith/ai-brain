@@ -403,3 +403,45 @@ body {
   .editor-grid, .kb-grid, .editor-split { grid-template-columns: 1fr; }
   .stat-row { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ---- Markdown reading experience -------------------------------------- */
+
+/* Roomier section separation on long documents. */
+.md h2 { margin-top: 46px; }
+.md h2 + h3 { margin-top: 14px; }
+.md hr { border: 0; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* Page index ("On this page"). */
+.md-toc {
+  margin: 0 0 22px; padding: 10px 14px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 13px;
+}
+.md-toc summary { cursor: pointer; font-weight: 600; letter-spacing: .02em; }
+.md-toc nav { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+.md-toc nav a { border-bottom: 0; padding: 1px 0; color: var(--fg); opacity: .85; }
+.md-toc nav a:hover { color: var(--accent); opacity: 1; }
+.md-toc nav a[data-level="3"] { padding-left: 16px; opacity: .7; font-size: 12.5px; }
+
+/* In-game books/letters as collapsible readables. */
+.book-block {
+  margin: 14px 0; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--panel-2); overflow: hidden;
+}
+.book-block summary {
+  display: flex; align-items: center; gap: 8px; padding: 9px 12px; cursor: pointer;
+  list-style: none;
+}
+.book-block summary::-webkit-details-marker { display: none; }
+.book-block .book-icon { flex-shrink: 0; }
+.book-block .book-title { font-weight: 600; white-space: nowrap; }
+.book-block .book-title a { border-bottom: 0; }
+.book-block .book-preview {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  opacity: .55; font-size: 12.5px; font-style: italic;
+}
+.book-block[open] .book-preview { display: none; }
+.book-block .book-pages {
+  padding: 4px 16px 10px; border-top: 1px solid var(--border);
+  font-style: italic; opacity: .92;
+}

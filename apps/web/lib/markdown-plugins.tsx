@@ -3,6 +3,7 @@
 import type { ComponentType } from "react";
 import tibiaMapPlugin from "ai-brain-tibiamap-plugin";
 import galleryPlugin from "@/lib/plugins/gallery";
+import bookPlugin from "@/lib/plugins/book";
 
 /**
  * Markdown fence plugin registry.
@@ -23,7 +24,7 @@ export interface FencePlugin {
   };
 }
 
-export const fencePlugins: FencePlugin[] = [tibiaMapPlugin, galleryPlugin];
+export const fencePlugins: FencePlugin[] = [tibiaMapPlugin, galleryPlugin, bookPlugin];
 
 export function fencePluginFor(language: string | undefined): FencePlugin | undefined {
   if (!language) return undefined;
