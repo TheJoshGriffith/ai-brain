@@ -33,6 +33,7 @@ export function KbView({
   pageSize,
   total,
   sort,
+  q,
 }: {
   docs: KbDoc[];
   spaceTags: { id: string; name: string }[];
