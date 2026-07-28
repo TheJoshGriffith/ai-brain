@@ -11,25 +11,27 @@ const PAGE_SIZE = 50;
 export default async function DocumentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tag?: string; page?: string; sort?: string }>;
+  searchParams: Promise<{ tag?: string; page?: string; sort?: string; q?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) return null;
   const { current } = await getSpacesAndCurrent(session.user.id);
-  const { tag, page: pageParam, sort: sortParam } = await searchParams;
+  const { tag: tagParam, page: pageParam, sort: sortParam, q: qParam } = await searchParams;
 
   const page = Math.max(1, Number(pageParam) || 1);
   const sort = sortParam === "title" ? "title" : "updated";
   const offset = (page - 1) * PAGE_SIZE;
   const userId = session.user.id;
+  const q = qParam?.trim() || undefined;
+  const tag = q ? undefined : tagParam; // title search spans the whole space
 
   const [docs, total, spaceTags] = await Promise.all([
     tag
       ? tagService().listDocumentsByTag(userId, current.id, tag, { limit: PAGE_SIZE, offset, sort })
-      : documentService().list(userId, current.id, { limit: PAGE_SIZE, offset, sort }),
+      : documentService().list(userId, current.id, { limit: PAGE_SIZE, offset, sort, q }),
     tag
       ? tagService().countDocumentsByTag(userId, current.id, tag)
-      : documentService().count(userId, current.id),
+      : documentService().count(userId, current.id, q),
     tagService().listForSpace(userId, current.id),
   ]);
   const tagMap = await tagService().tagsByDocuments(docs.map((d) => d.id));
@@ -55,6 +57,7 @@ export default async function DocumentsPage({
       pageSize={PAGE_SIZE}
       total={total}
       sort={sort}
+      q={q ?? ""}
     />
   );
 }

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, isNull, like, lt, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, isNotNull, isNull, like, lt, ne, sql } from "drizzle-orm";
 import {
   documentVersions,
   documents,
@@ -101,28 +101,42 @@ export class DocumentService {
   async list(
     userId: string,
     spaceId: string,
-    opts: { limit?: number; offset?: number; sort?: "updated" | "title" } = {},
+    opts: { limit?: number; offset?: number; sort?: "updated" | "title"; q?: string } = {},
   ): Promise<DocumentSummary[]> {
     if (!(await this.access.resolveSpaceRole(userId, spaceId))) throw new DocumentForbiddenError();
     const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
     const offset = Math.max(opts.offset ?? 0, 0);
     const order = opts.sort === "title" ? asc(documents.title) : desc(documents.updatedAt);
+    const q = opts.q?.trim();
     return this.db
       .select(SUMMARY_COLUMNS)
       .from(documents)
-      .where(and(eq(documents.spaceId, spaceId), isNull(documents.deletedAt)))
+      .where(
+        and(
+          eq(documents.spaceId, spaceId),
+          isNull(documents.deletedAt),
+          q ? ilike(documents.title, `%${q}%`) : undefined,
+        ),
+      )
       .orderBy(order)
       .limit(limit)
       .offset(offset);
   }
 
   /** Count of live documents in a space (for pagination). */
-  async count(userId: string, spaceId: string): Promise<number> {
+  async count(userId: string, spaceId: string, q?: string): Promise<number> {
     if (!(await this.access.resolveSpaceRole(userId, spaceId))) throw new DocumentForbiddenError();
+    const needle = q?.trim();
     const [row] = await this.db
       .select({ n: sql<number>`count(*)::int` })
       .from(documents)
-      .where(and(eq(documents.spaceId, spaceId), isNull(documents.deletedAt)));
+      .where(
+        and(
+          eq(documents.spaceId, spaceId),
+          isNull(documents.deletedAt),
+          needle ? ilike(documents.title, `%${needle}%`) : undefined,
+        ),
+      );
     return row?.n ?? 0;
   }
 

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { File, Layers, Search, Trash2 } from "lucide-react";
 import { createDocumentAction } from "./actions";
 import { ImportExportControls } from "./import-export";
@@ -43,13 +44,25 @@ export function KbView({
   pageSize: number;
   total: number;
   sort: "updated" | "title";
+  q: string;
 }) {
-  const [query, setQuery] = useState("");
+  const router = useRouter();
+  const [query, setQuery] = useState(q);
+  const rows = docs; // filtering happens server-side (whole space, not just this page)
 
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return q ? docs.filter((d) => d.title.toLowerCase().includes(q)) : docs;
-  }, [docs, query]);
+  // Debounced server-side title search via the URL (?q=…).
+  useEffect(() => {
+    const term = query.trim();
+    if (term === q) return;
+    const t = setTimeout(() => {
+      const sp = new URLSearchParams();
+      if (term) sp.set("q", term);
+      if (sort !== "updated") sp.set("sort", sort);
+      const s = sp.toString();
+      router.push(`/documents${s ? `?${s}` : ""}`);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [query, q, sort, router]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const firstShown = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -57,6 +70,7 @@ export function KbView({
   const href = (params: Record<string, string | number | undefined>) => {
     const sp = new URLSearchParams();
     if (activeTag) sp.set("tag", activeTag);
+    if (q) sp.set("q", q);
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") sp.set(k, String(v));
     const s = sp.toString();
     return `/documents${s ? `?${s}` : ""}`;
@@ -113,7 +127,7 @@ export function KbView({
           <div className="toolbar">
             <div className="filter-input">
               <Search />
-              <input placeholder="Filter this page…" value={query} onChange={(e) => setQuery(e.target.value)} />
+              <input placeholder="Search titles…" value={query} onChange={(e) => setQuery(e.target.value)} />
             </div>
             <div className="seg">
               <Link href={href({ sort: "updated" })} data-on={sort === "updated"}>Updated</Link>
@@ -124,7 +138,7 @@ export function KbView({
           {rows.length === 0 ? (
             <div className="empty">
               <Search />
-              <h3>{total === 0 ? "No documents yet" : "Nothing on this page matches"}</h3>
+              <h3>{q ? `No titles match “${q}”` : "No documents yet"}</h3>
               <p className="hint">Create a document, or have Claude/Codex write to your brain over the API.</p>
             </div>
           ) : (
